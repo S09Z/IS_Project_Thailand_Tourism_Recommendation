@@ -1,55 +1,49 @@
 import requests
 from dataclasses import dataclass
 from typing import List
+from dotenv import load_dotenv
+import os
+
+# Load environment variables from .env file
+load_dotenv()
 
 @dataclass
 class Province:
     name: str
 
 class ThaiTourismAPI:
-    BASE_URL = "https://thaiaddressapi-thaikub.herokuapp.com/v1"
+    BASE_URL = "https://tatapi.tourismthailand.org/tatapi/v5"
 
     def __init__(self):
+        self.api_key = os.getenv('TAT_API_KEY')  # Load the API key from environment variables
+        if not self.api_key:
+            raise ValueError("API key not found. Please set the TAT_API_KEY environment variable.")
         self.session = requests.Session()
 
-    def fetch_all_provinces(self) -> List[Province]:
-        url = f"{self.BASE_URL}/thailand/provinces"
-        response = self.session.get(url)
-        response.raise_for_status()
-        provinces_data = response.json().get("data", [])
-        return [Province(name=province) for province in provinces_data]
+    def fetch_recommend_list(self) -> List[Province]:
+        url = f"{self.BASE_URL}/routes"
+        headers = {
+            "Authorization": f"Bearer {self.api_key}",
+            "Accept-Language": "TH"
+        }
+        params = {
+            # "numberofday": 2,
+            # "geolocation": "13.67,100.76",
+            # "region": "C"
+        }
 
-    def fetch_districts_in_province(self, province_name: str) -> List[str]:
-        url = f"{self.BASE_URL}/thailand/provinces/{province_name}/district"
-        response = self.session.get(url)
-        response.raise_for_status()
-        districts_data = response.json().get("data", [])
-        return districts_data
+        response = self.session.get(url, headers=headers, params=params)
+        response.raise_for_status()  # Raise an error for bad responses
 
-    def fetch_subdistricts_in_district(self, province_name: str, district_name: str) -> List[str]:
-        url = f"{self.BASE_URL}/thailand/provinces/{province_name}/district/{district_name}"
-        response = self.session.get(url)
-        response.raise_for_status()
-        subdistricts_data = response.json().get("data", [])
-        return subdistricts_data
+        provinces_data = response.json().get("result", [])
+        # print(response.json())
+        return [Province(name=province['route_name']) for province in provinces_data]
+
 
 # Example usage
 if __name__ == "__main__":
-    api = ThaiTourismAPI()
-    
-    # Fetch all provinces
-    provinces = api.fetch_all_provinces()
-    for province in provinces:
+    recommendation_system = ThaiTourismAPI()
+    recommended_provinces = recommendation_system.fetch_recommend_list()
+
+    for province in recommended_provinces:
         print(province.name)
-    
-    # Fetch all districts in a specific province
-    province_name = "กรุงเทพ"
-    districts = api.fetch_districts_in_province(province_name)
-    for district in districts:
-        print(district)
-    
-    # Fetch all subdistricts in a specific district of a specific province
-    district_name = "บางรัก"
-    subdistricts = api.fetch_subdistricts_in_district(province_name, district_name)
-    for subdistrict in subdistricts:
-        print(subdistrict)
