@@ -6,7 +6,7 @@ from typing import List
 class Province:
     name: str
 
-class ThaiTourismAPI:
+class ThaiGeographiesAPI:
     BASE_URL = "https://thaiaddressapi-thaikub.herokuapp.com/v1"
 
     def __init__(self):
@@ -35,7 +35,7 @@ class ThaiTourismAPI:
 
 # Example usage
 if __name__ == "__main__":
-    api = ThaiTourismAPI()
+    api = ThaiGeographiesAPI()
     
     # Fetch all provinces
     provinces = api.fetch_all_provinces()
