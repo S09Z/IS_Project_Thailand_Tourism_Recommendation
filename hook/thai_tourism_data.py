@@ -54,10 +54,10 @@ class ThaiTourismAPI:
         }
         params = {
             "keyword": keyword,
-            # "location": location,
-            # "categorycodes": categorycodes,
-            # "provinceName": province_name,
-            # "radius": radius,
+            "location": location,
+            "categorycodes": categorycodes,
+            "provinceName": province_name,
+            "radius": radius,
             "numberOfResult": number_of_result,
             "pagenumber": page_number,
             # "destination": destination,
