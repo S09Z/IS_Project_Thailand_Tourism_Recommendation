@@ -1,11 +1,29 @@
 import requests
 from requests import Response
 
-
-class TripadvisorApi():
+class TripadvisorApi:
     def __init__(self, key: str):
         self.api_key = key
         self.api_url = 'https://api.content.tripadvisor.com/api/v1'
+
+    def test_api_request(self) -> Response:
+        print(f"Testing Tripadvisor API... {self.api_key}")
+
+        search_query = "เมืองกาญจนบุรี"
+        url = f"{self.api_url}/location/search"
+
+        headers = {"accept": "application/json"}
+
+        params = {
+            "key": self.api_key,
+            "searchQuery": search_query,
+            "category": "attractions",
+            "language": "th"
+        }
+
+        response = requests.get(url, headers=headers, params=params)
+        print(response.text)
+        return response
 
     def make_request(self, url: str) -> Response:
         headers = {"accept": "application/json"}
@@ -13,30 +31,24 @@ class TripadvisorApi():
         print(url)
         return response
 
-
-    def location_details(self, locationId: str, language: str="th", currency: str="USD") -> Response:
+    def location_details(self, locationId: str, language: str = "th", currency: str = "USD") -> Response:
         location_details_url = f"{self.api_url}/location/{locationId}/details?language={language}&currency={currency}&key={self.api_key}"
         response = self.make_request(location_details_url)
         return response
 
-
-    def location_photos(self, locationId: str, language: str="th") -> Response:
-        
+    def location_photos(self, locationId: str, language: str = "th") -> Response:
         location_photos_url = f"{self.api_url}/location/{locationId}/photos?language={language}&key={self.api_key}"
         response = self.make_request(location_photos_url)
         return response
 
-
-    def location_reviews(self, locationId: str, language: str="th") -> Response:
-       
+    def location_reviews(self, locationId: str, language: str = "th") -> Response:
         location_reviews_url = f"{self.api_url}/location/{locationId}/reviews?language={language}&key={self.api_key}"
         response = self.make_request(location_reviews_url)
         return response
 
-
-    def location_search(self, searchQuery: str, category: str = None, phone: str = None, address: str = None, latLong: str = None, radius: int = None, radiusUnit: str = None, language: str = "en") -> Response:
-        
-        
+    def location_search(self, searchQuery: str, category: str = None, phone: str = None, address: str = None,
+                        latLong: str = None, radius: int = None, radiusUnit: str = None,
+                        language: str = "en") -> Response:
         location_search_url = f"{self.api_url}/location/search?language={language}&key={self.api_key}&searchQuery={searchQuery}"
 
         if category:
@@ -51,14 +63,12 @@ class TripadvisorApi():
             location_search_url += f"&radius={radius}"
         if radiusUnit:
             location_search_url += f"&radiusUnit={radiusUnit}"
-        
+
         response = self.make_request(location_search_url)
         return response
 
-
-    def location_nearby_search(self, latLong: str, category: str = None, phone: str = None, address: str = None, radius: int = None, radiusUnit: str = None, language: str = "en") -> Response:
-        
-
+    def location_nearby_search(self, latLong: str, category: str = None, phone: str = None, address: str = None,
+                               radius: int = None, radiusUnit: str = None, language: str = "en") -> Response:
         location_nearby_url = f"{self.api_url}/location/search?language={language}&key={self.api_key}&latLong={latLong}"
 
         if category:
@@ -71,6 +81,13 @@ class TripadvisorApi():
             location_nearby_url += f"&radius={radius}"
         if radiusUnit:
             location_nearby_url += f"&radiusUnit={radiusUnit}"
-        
+
         response = self.make_request(location_nearby_url)
         return response
+
+
+if __name__ == "__main__":
+    # Example usage:
+    thai_tourism_api = TripadvisorApi('')
+    thai_tourism_api.test_api_request()
+
