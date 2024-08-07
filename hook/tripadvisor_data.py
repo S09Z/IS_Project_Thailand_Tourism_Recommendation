@@ -1,32 +1,14 @@
 import requests
 from requests import Response
 
-class TripadvisorApi:
-    def __init__(self, key: str):
+class TripAdvisorApi:
+    def __init__(self, key: str, language: str):
         self.api_key = key
+        self.language = language
         self.api_url = 'https://api.content.tripadvisor.com/api/v1'
 
-    def test_api_request(self) -> Response:
-        print(f"Testing Tripadvisor API... {self.api_key}")
-
-        search_query = "เมืองกาญจนบุรี"
-        url = f"{self.api_url}/location/search"
-
-        headers = {"accept": "application/json"}
-
-        params = {
-            "key": self.api_key,
-            "searchQuery": search_query,
-            "category": "attractions",
-            "language": "th"
-        }
-
-        response = requests.get(url, headers=headers, params=params)
-        print(response.text)
-        return response
-
     def make_request(self, url: str) -> Response:
-        headers = {"accept": "application/json"}
+        headers = {"accept": "application/json", "Accept-Language": self.language}
         response = requests.get(url, headers=headers)
         print(url)
         return response
@@ -85,9 +67,26 @@ class TripadvisorApi:
         response = self.make_request(location_nearby_url)
         return response
 
+    def test_api_request(self) -> Response:
+        print(f"Testing Tripadvisor API... {self.api_key}")
 
-if __name__ == "__main__":
-    # Example usage:
-    thai_tourism_api = TripadvisorApi('')
-    thai_tourism_api.test_api_request()
+        search_query = "เมืองกาญจนบุรี"
+        url = f"{self.api_url}/location/search"
 
+        headers = {"accept": "application/json"}
+
+        params = {
+            "key": self.api_key,
+            "searchQuery": search_query,
+            "category": "attractions",
+            "language": "th"
+        }
+
+        response = requests.get(url, headers=headers, params=params)
+        print(response.text)
+        return response
+
+# if __name__ == "__main__":
+#     # Example usage:
+#     thai_tourism_api = TripAdvisorApi('')
+#     thai_tourism_api.test_api_request()

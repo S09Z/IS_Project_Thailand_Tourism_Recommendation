@@ -38,11 +38,12 @@ class ThaiTourismData:
 class ThaiTourismAPI:
     BASE_URL = "https://tatapi.tourismthailand.org/tatapi/v5/places"
 
-    def __init__(self):
+    def __init__(self, language: str):
         self.api_key = os.getenv('TAT_API_KEY')  # Load the API key from environment variables
         if not self.api_key:
             raise ValueError("API key not found. Please set the TAT_API_KEY environment variable.")
         self.session = requests.Session()
+        self.language = language
 
     def fetch_search_location(self, keyword: str, location: str, categorycodes: str,
                               province_name: str, radius: int, number_of_result: int,
@@ -50,7 +51,7 @@ class ThaiTourismAPI:
         url = f"{self.BASE_URL}/search"
         headers = {
             "Authorization": f"Bearer {self.api_key}",
-            "Accept-Language": "TH"
+            "Accept-Language": self.language
         }
         params = {
             "keyword": keyword,
