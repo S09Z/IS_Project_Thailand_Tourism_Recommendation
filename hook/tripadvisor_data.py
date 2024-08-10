@@ -10,7 +10,6 @@ class TripAdvisorApi:
     def make_request(self, url: str) -> Response:
         headers = {"accept": "application/json", "Accept-Language": self.language}
         response = requests.get(url, headers=headers)
-        print(url)
         return response
 
     def location_details(self, locationId: str, language: str = "th", currency: str = "USD") -> Response:

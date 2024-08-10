@@ -61,8 +61,8 @@ class ThaiTourismAPI:
             "radius": radius,
             "numberOfResult": number_of_result,
             "pagenumber": page_number,
-            # "destination": destination,
-            # "filterByUpdateDate": filter_by_update_date
+            "destination": destination,
+            "filterByUpdateDate": filter_by_update_date
         }
 
         try:
@@ -105,7 +105,7 @@ class ThaiTourismAPI:
     
 if __name__ == "__main__":
     # Example usage:
-    thai_tourism_api = ThaiTourismAPI()
+    thai_tourism_api = ThaiTourismAPI("EN")
     
     # Define the search parameters
     search_params = {
