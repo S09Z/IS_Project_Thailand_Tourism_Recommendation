@@ -25,6 +25,8 @@ tensorflow-io-gcs-filesystem = ">= 0.23.1,< 0.37.0"
 pythainlp = "^5.0.4"
 seaborn = "^0.13.2"
 imblearn = "^0.0"
+parsel = "^1.9.1"
+bs4 = "^0.0.2"
 
 
 [tool.poetry.group.dev.dependencies]
