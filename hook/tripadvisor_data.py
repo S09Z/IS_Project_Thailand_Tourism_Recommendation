@@ -29,7 +29,7 @@ class TripAdvisorApi:
 
     def location_search(self, searchQuery: str, category: str = None, phone: str = None, address: str = None,
                         latLong: str = None, radius: int = None, radiusUnit: str = None,
-                        language: str = "en") -> Response:
+                        language: str = "en") -> str:
         location_search_url = f"{self.api_url}/location/search?language={language}&key={self.api_key}&searchQuery={searchQuery}"
 
         if category:
@@ -44,7 +44,7 @@ class TripAdvisorApi:
             location_search_url += f"&radius={radius}"
         if radiusUnit:
             location_search_url += f"&radiusUnit={radiusUnit}"
-
+        # print(f">>> make request [{location_search_url}]")
         response = self.make_request(location_search_url)
         return response
 
