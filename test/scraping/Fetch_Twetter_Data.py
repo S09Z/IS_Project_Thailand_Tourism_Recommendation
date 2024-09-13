@@ -1,12 +1,13 @@
 import tweepy
 import json
+import os
 
 # Step 1: Set up Twitter API credentials
-API_KEY = 'dllmDpdQkSaVDHOBY4MbMXAI9'
-API_SECRET_KEY = 'Qa7vEvVAwpwIDVBm61149ffrZYaNtY7dD48ONqr4bGNtCA04ya'
-ACCESS_TOKEN = '1819611229218033664-ivSNkqUdhSezu8PGavFdBBtsTpMqcP'
-ACCESS_TOKEN_SECRET = '92K2zPF8DvNrslXxYL48zL0eJEsmL6k6E4MYhdft4qIbS'
-BEARER_TOKEN = 'AAAAAAAAAAAAAAAAAAAAAIoovQEAAAAAcTbg3pX8K9wCGPDyu9fVricbQQA%3D8vP65IzhcOdPLuW7tNNG0nws12kdUrEnAkAAPxzDeXlPr8uJeF'
+API_KEY = os.getenv('GOOGLE_API_KEY')
+API_SECRET_KEY = os.getenv('GOOGLE_API_SECRET_KEY')
+ACCESS_TOKEN = os.getenv('GOOGLE_ACCESS_TOKEN')
+ACCESS_TOKEN_SECRET = os.getenv('GOOGLE_ACCESS_TOKEN_SECRET')
+BEARER_TOKEN = os.getenv('GOOGLE_BEARER_TOKEN')
 
 # Step 2: Authenticate to Twitter using v2 API
 client = tweepy.Client(bearer_token=BEARER_TOKEN)
