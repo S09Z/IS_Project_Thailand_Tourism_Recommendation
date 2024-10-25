@@ -66,6 +66,7 @@ optuna = "^4.0.0"
 optuna-dashboard = "^0.16.2"
 opencv-python = "^4.10.0.84"
 tensorflow-probability = "0.17.0"
+ace-tools = "^0.0"
 
 [tool.poetry.group.dev.dependencies]
 ipykernel = "^6.29.5"

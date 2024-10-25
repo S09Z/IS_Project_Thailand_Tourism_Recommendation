@@ -43,6 +43,17 @@ test-trackers = ["comet-ml", "dvclive", "tensorboard", "wandb"]
 testing = ["bitsandbytes", "datasets", "diffusers", "evaluate", "parameterized", "pytest (>=7.2.0,<=8.0.0)", "pytest-subtests", "pytest-xdist", "scikit-learn", "scipy", "timm", "torchdata (>=0.8.0)", "torchpippy (>=0.2.0)", "tqdm", "transformers"]
 
 [[package]]
+name = "ace-tools"
+version = "0.0"
+description = "A placeholder empty package"
+optional = false
+python-versions = "*"
+files = [
+    {file = "ace_tools-0.0-py3-none-any.whl", hash = "sha256:1b5d4b0f6eeb8dfc1b04986af413cc529a9a5167d53db5cde5b91ac8f9d00374"},
+    {file = "ace_tools-0.0.tar.gz", hash = "sha256:fe23f94302886b789cd1ebd8c7559da615c993b86e9f36a8a46034cf3e484ef5"},
+]
+
+[[package]]
 name = "aiohappyeyeballs"
 version = "2.4.0"
 description = "Happy Eyeballs for asyncio"
@@ -9906,4 +9917,4 @@ recommender = ["scikit-surprise"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.12,<3.13"
-content-hash = "6f5822b6843d6246a874b351fdd3b320b72358f0c2a93d9259a9eb79954e701a"
+content-hash = "2b82b4d1a5c518a4e443f74eacaf2d40a01536e31a30c80d845aebad7ccb01d7"
