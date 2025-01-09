@@ -1,67 +1,45 @@
-import os
 import requests
 from typing import List, Optional
 from dotenv import load_dotenv
-from typing import Optional, List, Dict
+import os
 
 # Load environment variables from .env file
 load_dotenv()
 
-class Category:
-    def __init__(self, category_id: int, name: str, icon: Optional[str] = None):
-        self.category_id = category_id
-        self.name = name
-        self.icon = icon
-
-class ShaType:
-    def __init__(self, type_id: int, name: str):
-        self.type_id = type_id
-        self.name = name
-
-class Sha:
-    def __init__(self, name: str, detail: str, thumbnail_url: str, sha_type: ShaType, sha_category: Category):
-        self.name = name
-        self.detail = detail
-        self.thumbnail_url = thumbnail_url
-        self.sha_type = sha_type
-        self.sha_category = sha_category
-
-class Location:
-    def __init__(self, address: str, province: Dict[str, int], district: Dict[str, int], sub_district: Dict[str, int], postcode: str):
-        self.address = address
-        self.province = province
-        self.district = district
-        self.sub_district = sub_district
-        self.postcode = postcode
-
 class ThaiTourismData:
-    def __init__(self, place_id: int, name: str, introduction: str, category: Category,
-                 sha: Sha, latitude: float, longitude: float, location: Location,
-                 thumbnail_url: List[str], tags: List[str], distance: float,
-                 created_at: str, updated_at: str):
+    def __init__(self, place_id: str, place_name: str, latitude: float, longitude: float,
+                 category_code: str, category_description: str, sha_name: Optional[str],
+                 sha_type_code: Optional[str], sha_type_description: Optional[str], sha_cate_id: Optional[str],
+                 sha_cate_description: Optional[str], address: Optional[str], sub_district: str,
+                 district: str, province: str, postcode: str, thumbnail_url: Optional[str],
+                 destination: str, tags: Optional[List[str]], distance: float, update_date: str):
         self.place_id = place_id
-        self.name = name
-        self.introduction = introduction
-        self.category = category
-        self.sha = sha
+        self.place_name = place_name
         self.latitude = latitude
         self.longitude = longitude
-        self.location = location
+        self.category_code = category_code
+        self.category_description = category_description
+        self.sha_name = sha_name
+        self.sha_type_code = sha_type_code
+        self.sha_type_description = sha_type_description
+        self.sha_cate_id = sha_cate_id
+        self.sha_cate_description = sha_cate_description
+        self.address = address
+        self.sub_district = sub_district
+        self.district = district
+        self.province = province
+        self.postcode = postcode
         self.thumbnail_url = thumbnail_url
+        self.destination = destination
         self.tags = tags
         self.distance = distance
-        self.created_at = created_at
-        self.updated_at = updated_at
+        self.update_date = update_date
 
 class ThaiTourismAPI:
-    # BASE_URL = "https://tatapi.tourismthailand.org/tatapi/v5/places"
-    BASE_URL = "https://tatdataapi.io/api/v2/places"
+    BASE_URL = "https://tatapi.tourismthailand.org/tatapi/v5/places"
 
     def __init__(self, language: str):
         self.api_key = os.getenv('TAT_API_KEY')  # Load the API key from environment variables
-        self.api_key_v2 = os.getenv('TAT_API_KEY_V2')
-        if not self.api_key_v2:
-            raise ValueError("API key not found. Please set the TAT_API_KEY_V2 environment variable.")
         if not self.api_key:
             raise ValueError("API key not found. Please set the TAT_API_KEY environment variable.")
         self.session = requests.Session()
@@ -70,22 +48,21 @@ class ThaiTourismAPI:
     def fetch_search_location(self, keyword: str, location: str, categorycodes: str,
                               province_name: str, radius: int, number_of_result: int,
                               page_number: int, destination: str, filter_by_update_date: str) -> List[ThaiTourismData]:
-        url = f"{self.BASE_URL}"
+        url = f"{self.BASE_URL}/search"
         headers = {
             "Authorization": f"Bearer {self.api_key}",
-            "Accept-Language": self.language,
-            "x-api-key": self.api_key_v2
+            "Accept-Language": self.language
         }
         params = {
             "keyword": keyword,
-            # "location": location,
+            "location": location,
             "categorycodes": categorycodes,
             "provinceName": province_name,
             "radius": radius,
             "numberOfResult": number_of_result,
             "pagenumber": page_number,
             "destination": destination,
-            # "filterByUpdateDate": filter_by_update_date
+            "filterByUpdateDate": filter_by_update_date
         }
 
         try:
@@ -94,53 +71,29 @@ class ThaiTourismAPI:
             response.raise_for_status()  # Raise an error for bad responses
 
             # Extract the JSON response
-            places_data = response.json().get("data", [])
-            print(places_data)
+            places_data = response.json().get("result", [])
             return [ThaiTourismData(
-                place_id=place["placeId"],
-                name=place["name"],
-                introduction=place.get("introduction", ""),  # Use .get() for optional fields
-                category=Category(
-                    category_id=place["category"]["categoryId"],
-                    name=place["category"]["name"]
-                ),
-                sha=Sha(
-                    name=place["sha"]["name"],
-                    detail=place["sha"].get("detail", ""),  # Optional field
-                    thumbnail_url=place["sha"]["thumbnailUrl"],
-                    sha_type=ShaType(
-                        type_id=place["sha"]["type"]["typeId"],
-                        name=place["sha"]["type"]["name"]
-                    ),
-                    sha_category=Category(
-                        category_id=place["sha"]["category"]["categoryId"],
-                        name=place["sha"]["category"]["name"],
-                        icon=place["sha"]["category"].get("icon", "")  # Optional field
-                    )
-                ),
+                place_id=place["place_id"],
+                place_name=place["place_name"],
                 latitude=place["latitude"],
                 longitude=place["longitude"],
-                location=Location(
-                    address=place["location"]["address"],
-                    province={
-                        "provinceId": place["location"]["province"]["provinceId"],
-                        "name": place["location"]["province"]["name"]
-                    },
-                    district={
-                        "districtId": place["location"]["district"]["districtId"],
-                        "name": place["location"]["district"]["name"]
-                    },
-                    sub_district={
-                        "subDistrictId": place["location"]["subDistrict"]["subDistrictId"],
-                        "name": place["location"]["subDistrict"]["name"]
-                    },
-                    postcode=place["location"]["postcode"]
-                ),
-                thumbnail_url=place.get("thumbnailUrl", []),  # Optional field as list
-                tags=place.get("tags", []),  # Optional field as list
+                category_code=place["category_code"],
+                category_description=place["category_description"],
+                sha_name=place["sha"]["sha_name"],
+                sha_type_code=place["sha"]["sha_type_code"],
+                sha_type_description=place["sha"]["sha_type_description"],
+                sha_cate_id=place["sha"]["sha_cate_id"],
+                sha_cate_description=place["sha"]["sha_cate_description"],
+                address=place["location"]["address"],
+                sub_district=place["location"]["sub_district"],
+                district=place["location"]["district"],
+                province=place["location"]["province"],
+                postcode=place["location"]["postcode"],
+                thumbnail_url=place["thumbnail_url"],
+                destination=place["destination"],
+                tags=place.get("tags"),  # Use .get() to handle potential None values
                 distance=place["distance"],
-                created_at=place["createdAt"],
-                updated_at=place["updatedAt"]
+                update_date=place["update_date"]
             ) for place in places_data]
 
         except requests.exceptions.SSLError as e:
@@ -159,11 +112,11 @@ if __name__ == "__main__":
         "keyword": "กาญจนบุรี",  # Example keyword for Kanchanaburi
         "location": "13.6904831,100.5226014",
         "categorycodes": "RESTAURANT",
-        "province_name": "Kanchanaburi",
+        "province_name": "Bangkok",
         "radius": 20,
         "number_of_result": 10,
         "page_number": 1,
-        "destination": "Kanchanaburi",
+        "destination": "Bangkok",
         "filter_by_update_date": "2019/09/01-2021/12/31"
     }
 
