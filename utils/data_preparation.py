@@ -13,7 +13,7 @@ from constant import PROJECT_ROOT
 # from constant import NLTK_DATA_PATH
 nltk.data.path.append(f'{PROJECT_ROOT}/pretained_or_finetune-models/nltk_data')
 # nltk.data.path.append(NLTK_DATA_PATH)
-# nltk.download ('all', download_dir=f'{PROJECT_ROOT}/pretained_or_finetune-models/nltk_data')
+nltk.download ('all', download_dir=f'{PROJECT_ROOT}/pretained_or_finetune-models/nltk_data')
 
 print("Numpy version:", np.__version__)
 print("Pandas version:", pd.__version__)
