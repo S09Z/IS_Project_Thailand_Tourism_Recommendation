@@ -175,3 +175,5 @@ test/models/results
 test/models/output
 
 */node_modules
+*.csv
+*.csv
