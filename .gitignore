@@ -167,3 +167,13 @@ venv
 *.zip
 pretained_or_finetune-models
 /models
+/dataset/large
+logs
+mlruns
+dataset
+test/models/results
+test/models/output
+
+*/node_modules
+*.csv
+*.csv
