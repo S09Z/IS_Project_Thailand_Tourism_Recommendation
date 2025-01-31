@@ -43,6 +43,17 @@ test-trackers = ["comet-ml", "dvclive", "tensorboard", "wandb"]
 testing = ["bitsandbytes", "datasets", "diffusers", "evaluate", "parameterized", "pytest (>=7.2.0,<=8.0.0)", "pytest-subtests", "pytest-xdist", "scikit-learn", "scipy", "timm", "torchdata (>=0.8.0)", "torchpippy (>=0.2.0)", "tqdm", "transformers"]
 
 [[package]]
+name = "ace-tools"
+version = "0.0"
+description = "A placeholder empty package"
+optional = false
+python-versions = "*"
+files = [
+    {file = "ace_tools-0.0-py3-none-any.whl", hash = "sha256:1b5d4b0f6eeb8dfc1b04986af413cc529a9a5167d53db5cde5b91ac8f9d00374"},
+    {file = "ace_tools-0.0.tar.gz", hash = "sha256:fe23f94302886b789cd1ebd8c7559da615c993b86e9f36a8a46034cf3e484ef5"},
+]
+
+[[package]]
 name = "aiohappyeyeballs"
 version = "2.4.0"
 description = "Happy Eyeballs for asyncio"
@@ -1263,7 +1274,7 @@ fsspec = {version = "*", optional = true, markers = "extra == \"epath\""}
 importlib_resources = {version = "*", optional = true, markers = "extra == \"epath\""}
 numpy = {version = "*", optional = true, markers = "extra == \"enp\""}
 tqdm = {version = "*", optional = true, markers = "extra == \"etqdm\""}
-typing_extensions = {version = "*", optional = true, markers = "extra == \"epath\""}
+typing_extensions = {version = "*", optional = true, markers = "extra == \"epy\""}
 zipp = {version = "*", optional = true, markers = "extra == \"epath\""}
 
 [package.extras]
@@ -7991,4 +8002,4 @@ recommender = []
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.12,<3.13"
-content-hash = "5268ee55b6f20ef61df4415e92966270f96345d36c037fecd487c8eace11b53a"
+content-hash = "e746a31b3b7d12360928416975710002d4b6b58e595faeddb82cc7ae45b5e6c0"
