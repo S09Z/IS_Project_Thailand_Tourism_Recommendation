@@ -56,6 +56,9 @@ nest-asyncio = "^1.6.0"
 datasets = "^2.21.0"
 xgboost = "^2.1.1"
 ace-tools = "^0.0"
+hdbscan = "^0.8.40"
+umap = "^0.1.1"
+umap-learn = "^0.5.7"
 
 [tool.poetry.group.dev.dependencies]
 ipykernel = "^6.29.5"
