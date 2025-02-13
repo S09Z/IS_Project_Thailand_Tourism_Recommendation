@@ -1,7 +1,6 @@
 import streamlit as st
 import pandas as pd
 import pydeck as pdk
-from st_aggrid import AgGrid
 import time
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
@@ -148,33 +147,33 @@ elif menu_choice == "Home":
             clear_button = st.form_submit_button("Clear Filters", type="secondary", use_container_width=True, on_click=clear_filters)
 
     # Pydeck Layer
-    layer = pdk.Layer(
-        "ScatterplotLayer",
-        data=geoMapCoordinateData,
-        get_position="[Longitude, Latitude]",
-        get_radius="Value * 1000",  # Adjust size based on Value
-        get_fill_color="[Value * 2, 100, 150, 128]",  # Set 128 for 50% transparency (RGBA)
-        pickable=True,
-    )
+    # layer = pdk.Layer(
+    #     "ScatterplotLayer",
+    #     data=geoMapCoordinateData,
+    #     get_position="[Longitude, Latitude]",
+    #     get_radius="Value * 1000",  # Adjust size based on Value
+    #     get_fill_color="[Value * 2, 100, 150, 128]",  # Set 128 for 50% transparency (RGBA)
+    #     pickable=True,
+    # )
 
     # Pydeck View
-    view = pdk.ViewState(
-        latitude=13.736717,
-        longitude=100.523186,
-        zoom=5,
-        pitch=50,
-    )
+    # view = pdk.ViewState(
+    #     latitude=13.736717,
+    #     longitude=100.523186,
+    #     zoom=5,
+    #     pitch=50,
+    # )
 
     # Pydeck Deck
-    r = pdk.Deck(
-        layers=[layer],
-        initial_view_state=view,
-        tooltip={"text": "{Province}\nValue: {Value}"},
-    )
+    # r = pdk.Deck(
+    #     layers=[layer],
+    #     initial_view_state=view,
+    #     tooltip={"text": "{Province}\nValue: {Value}"},
+    # )
 
     # Streamlit app
-    st.title("Thailand Geo Map by Province")
-    st.pydeck_chart(r)
+    # st.title("Thailand Geo Map by Province")
+    # st.pydeck_chart(r)
 
     # Handle form submission
     if submit_button:
