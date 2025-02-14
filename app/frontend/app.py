@@ -1,9 +1,17 @@
+import sys
+import os
+
+# Ensure the current directory is in sys.path
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+
 import streamlit as st
 import pandas as pd
 import pydeck as pdk
 import time
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
+
+from content_filtering import semantic_clustering
 
 # Set page layout to "wide" (must be the first Streamlit command)
 st.set_page_config(layout="wide")
@@ -32,48 +40,47 @@ if st.sidebar.button(f"🏠   Home", use_container_width=False, type="tertiary")
 if st.sidebar.button(f"📊   Data", use_container_width=False, type="tertiary"):
     menu_choice = "Data"
 
+merged_tat_attractions_df = pd.read_csv('./merged_tat_attractions.csv')
+tripadvisor_attractions_details = pd.read_csv('./data/combined_details.csv')
+tripadvisor_reviews_sentiment = pd.read_csv('./../../test/prediction/SVN_Prediction.csv', encoding='utf-8').reset_index(drop=True)
+attractions_tags_cluster = pd.read_csv("./clustering_experiment/input/tag_embeddings.csv")
+
 if menu_choice == "Data":
     st.title("Data Table")
-    st.write("This is the Data page where you can display data in table format.")
-
-    merged_tat_attractions_df = pd.read_csv('./merged_tat_attractions.csv')
+    st.header("Tourism Authority of Thailand Attractions Dataset", divider="gray")
+    st.write("-")
     # Display the DataFrame as a table
     st.dataframe(merged_tat_attractions_df, use_container_width=True)
-    # AgGrid(merged_tat_attractions_df, fit_columns_on_grid_load=True)
+
+
+    st.header("Tripadvisor Attractions Details Dataset", divider="gray")
+    st.write("-")
+
+    # Display the DataFrame as a table
+    st.dataframe(tripadvisor_attractions_details, use_container_width=True)
+
+
+    st.header("Tripadvisor Reviews Sentiment Analysis Dataset", divider="gray")
+    st.write("-")
+
+    # Display the DataFrame as a table
+    st.dataframe(tripadvisor_reviews_sentiment, use_container_width=True)
     
-    # Add a text input field under the table
-    user_input = st.text_input("Enter your input below:")
+    st.header("Attractions Tags Clustering Dataset", divider="gray")
+    st.write("-")
 
-    # Perform search when input is given
-    if user_input:
-        # Vectorize "introduction_th" using TF-IDF
-        vectorizer = TfidfVectorizer()
-        tfidf_matrix = vectorizer.fit_transform(merged_tat_attractions_df["introduction_th"])
-
-        # Transform user input into TF-IDF vector
-        user_query_vector = vectorizer.transform([user_input])
-
-        # Compute cosine similarity
-        similarity_scores = cosine_similarity(user_query_vector, tfidf_matrix).flatten()
-
-        # Add similarity scores to the DataFrame
-        merged_tat_attractions_df["similarity"] = similarity_scores
-
-        # Sort results by similarity
-        top_results = merged_tat_attractions_df.sort_values(by="similarity", ascending=False).head(5)
-
-        # Display top results
-        st.write("### Top Matching Results")
-        st.dataframe(top_results[["placeId", "place_name_th", "introduction_th", "similarity"]])
+    # Display the DataFrame as a table
+    st.dataframe(attractions_tags_cluster, use_container_width=True)
+        
 
     # Download option
-    csv = merged_tat_attractions_df.to_csv(index=False).encode("utf-8")
-    st.download_button(
-        label="Download data as CSV",
-        data=csv,
-        file_name="data.csv",
-        mime="text/csv",
-    )
+    # csv = merged_tat_attractions_df.to_csv(index=False).encode("utf-8")
+    # st.download_button(
+    #     label="Download data as CSV",
+    #     data=csv,
+    #     file_name="data.csv",
+    #     mime="text/csv",
+    # )
 
 # Main Page Content Based on Menu Selection
 elif menu_choice == "Home":
@@ -182,4 +189,15 @@ elif menu_choice == "Home":
         st.write(f"**Regions:** {', '.join(regions) if regions else 'None selected'}")
         st.write(f"**Trip Types:** {', '.join(trip_types) if trip_types else 'None selected'}")
         st.write(f"**Ratings:** {', '.join(map(str, ratings)) if ratings else 'None selected'}")
-        
+
+        if search_text.strip():
+            # Call the function and get results
+            result = semantic_clustering(search_text)
+
+            # Display results
+            st.subheader("Best Matched Attraction:")
+            st.write(f"**place_id:** {result['place_id']}")
+            st.write(f"**Attraction Name:** {result['Attraction Name']}")
+            st.write(f"**Most Similar Review:** {result['Most Similar Review']}")
+        else:
+            st.warning("Please enter some text to search.")
