@@ -1,5 +1,7 @@
 import sys
 import os
+import numpy as np
+from geopy.distance import geodesic
 
 # Ensure the current directory is in sys.path
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
@@ -32,6 +34,24 @@ st.sidebar.markdown(
     """,
     unsafe_allow_html=True,
 )
+
+def filter_locations_within_distance(cluster_df, matching_place_cluster, distance_km):
+    """Filter cluster_df locations within distance_km from the center (matching_place_cluster)."""
+    
+    # Get center latitude and longitude
+    center_lat = matching_place_cluster["latitude"].iloc[0]
+    center_lon = matching_place_cluster["longitude"].iloc[0]
+
+    # Calculate distance for each row in cluster_df
+    def is_within_distance(row):
+        location_coords = (row["latitude"], row["longitude"])
+        center_coords = (center_lat, center_lon)
+        return geodesic(center_coords, location_coords).km <= distance_km
+
+    # Apply filtering
+    filtered_df = cluster_df[cluster_df.apply(is_within_distance, axis=1)]
+    
+    return filtered_df
 
 # Sidebar Menu with Functional Buttons
 menu_choice = "Home"  # Default page
@@ -87,27 +107,25 @@ elif menu_choice == "Home":
     # App title
     st.title("Filter TripAdvisor Reviews")
 
-    geoMapCoordinateData = pd.DataFrame({
-        "Province": ["Bangkok", "Chiang Mai", "Phuket", "Khon Kaen", "Chon Buri"],
-        "Latitude": [13.736717, 18.788344, 7.880448, 16.441934, 13.361143],
-        "Longitude": [100.523186, 98.985300, 98.398102, 102.835223, 100.984671],
-        "Value": [100, 50, 70, 30, 60],  # Example values
-    })
+
+    trip_type_options = ["Solo", "Couples", "Business", "Family", "Friends"]
+    default_trip_type = st.session_state.get("trip_types", "Solo")
+    default_index = trip_type_options.index(default_trip_type) if default_trip_type in trip_type_options else 0
 
     # Function to clear all form inputs
     def clear_filters():
         st.session_state["search_text"] = ""
-        st.session_state["regions"] = []
-        st.session_state["trip_types"] = []
+        st.session_state["distance"] = []
+        st.session_state["trip_types"] = "Solo"
         st.session_state["ratings"] = []
 
     # Initialize session state variables for the form
     if "search_text" not in st.session_state:
         st.session_state["search_text"] = ""
-    if "regions" not in st.session_state:
-        st.session_state["regions"] = []
+    if "distance" not in st.session_state:
+        st.session_state["distance"] = 1000
     if "trip_types" not in st.session_state:
-        st.session_state["trip_types"] = []
+        st.session_state["trip_types"] = "Solo"
     if "ratings" not in st.session_state:
         st.session_state["ratings"] = []
 
@@ -121,20 +139,24 @@ elif menu_choice == "Home":
             value=st.session_state["search_text"],
             key="search_text",
         )
-
-        # Geographic regions
-        regions = st.multiselect(
-            "Select regions:",
-            options=["Central", "Northern", "Southern", "Eastern", "Western", "Northeastern"],
-            default=st.session_state["regions"],
-            key="regions",
+        
+         # Geographic distance
+        distance = st.number_input(
+            "Select distance:",
+            min_value=50,
+            max_value=1000,
+            value=st.session_state["distance"],
+            key="distance"
         )
 
+        # Display the selected distance
+        st.write(f"(MIN 50 km, MAX 1000 km)")
+
         # Trip types
-        trip_types = st.multiselect(
+        trip_types = st.selectbox(
             "Select trip types:",
-            options=["Couple", "Family", "Alone", "Friends", "Business"],
-            default=st.session_state["trip_types"],
+            options=trip_type_options,
+            index=default_index,  #
             key="trip_types",
         )
 
@@ -153,51 +175,143 @@ elif menu_choice == "Home":
         with col2:
             clear_button = st.form_submit_button("Clear Filters", type="secondary", use_container_width=True, on_click=clear_filters)
 
-    # Pydeck Layer
-    # layer = pdk.Layer(
-    #     "ScatterplotLayer",
-    #     data=geoMapCoordinateData,
-    #     get_position="[Longitude, Latitude]",
-    #     get_radius="Value * 1000",  # Adjust size based on Value
-    #     get_fill_color="[Value * 2, 100, 150, 128]",  # Set 128 for 50% transparency (RGBA)
-    #     pickable=True,
-    # )
-
-    # Pydeck View
-    # view = pdk.ViewState(
-    #     latitude=13.736717,
-    #     longitude=100.523186,
-    #     zoom=5,
-    #     pitch=50,
-    # )
-
-    # Pydeck Deck
-    # r = pdk.Deck(
-    #     layers=[layer],
-    #     initial_view_state=view,
-    #     tooltip={"text": "{Province}\nValue: {Value}"},
-    # )
-
-    # Streamlit app
-    # st.title("Thailand Geo Map by Province")
-    # st.pydeck_chart(r)
-
     # Handle form submission
     if submit_button:
         st.write("### Applied Filters")
         st.write(f"**Keyword:** {search_text}")
-        st.write(f"**Regions:** {', '.join(regions) if regions else 'None selected'}")
-        st.write(f"**Trip Types:** {', '.join(trip_types) if trip_types else 'None selected'}")
+        st.write(f"**distance:** {distance} km")
+        st.write(f"**Trip Types:** {trip_types}")
         st.write(f"**Ratings:** {', '.join(map(str, ratings)) if ratings else 'None selected'}")
 
         if search_text.strip():
             # Call the function and get results
             result = semantic_clustering(search_text)
 
+        
+
             # Display results
             st.subheader("Best Matched Attraction:")
-            st.write(f"**place_id:** {result['place_id']}")
+            st.write(f"**TAT Place ID:** {result['place_id']}")
+            st.write(f"**Similarity Score:** {result['similarity_Score']}")
             st.write(f"**Attraction Name:** {result['Attraction Name']}")
-            st.write(f"**Most Similar Review:** {result['Most Similar Review']}")
+            st.write(f"**Most Similar Name & Introduction:** {result['most_similar_name_and_introduction']}")
+            
+            matching_place_cluster = None
+            cluster_df = None
+            filtered_reviews = tripadvisor_reviews_sentiment[tripadvisor_reviews_sentiment["place_id"] == result["place_id"]]
+            filtered_reviews = filtered_reviews[filtered_reviews["location_id"].isin(result['location_id'])]
+            content_filtering_review = filtered_reviews.iloc[0] if not filtered_reviews.empty else None
+
+
+            if content_filtering_review is not None:
+                location_ids = content_filtering_review["location_id"]
+                # st.dataframe(location_ids, use_container_width=True)
+                if isinstance(location_ids, (int, float, np.int64)):
+                    location_ids = [location_ids]
+
+                matching_place_cluster = attractions_tags_cluster[attractions_tags_cluster["location_id"].isin(result['location_id'])]
+                
+                if matching_place_cluster is not None:
+                    cluster_df = attractions_tags_cluster[attractions_tags_cluster["cluster"].isin(matching_place_cluster['cluster'])]
+
+            if content_filtering_review is not None:
+                st.write(f"**TripAdvisor Place ID:** {result['location_id'].iloc[0]}")
+                if content_filtering_review is not None:
+                    
+                    label_mapping = {'negative': 0, 'neutral': 1, 'positive': 2}
+                    tripadvisor_reviews_sentiment['sentiment'] = tripadvisor_reviews_sentiment['predicted_sentiment'].map(label_mapping)
+                    
+                    sentiment_sum_per_location = (
+                        tripadvisor_reviews_sentiment.groupby("location_id")["sentiment"]
+                        .sum()
+                        .reset_index()
+                        .rename(columns={"sentiment": "sentiment_calc"})
+                    )
+                    
+                    
+                    st.subheader(f"Cluster Number: {matching_place_cluster['cluster'].iloc[0]} (Rows {len(cluster_df)}) - Ranking Recommendation")
+                    
+                    cluster_df = cluster_df.merge(sentiment_sum_per_location, on="location_id", how="left")
+                    
+                    cluster_df["sentiment_calc"] = cluster_df["sentiment_calc"].fillna(0).astype(int)
+                    
+                    cluster_df['total_review'] = cluster_df['rating_1_review_count'] + cluster_df['rating_2_review_count'] + cluster_df['rating_3_review_count'] + cluster_df['rating_4_review_count'] + cluster_df['rating_5_review_count']
+                    
+                    sort_columns = ["sentiment_calc"]  # Always include sentiment as the first priority
+
+                    # If the user selects ratings, use only the selected ones
+                    if len(ratings) > 0:
+                        for rating in sorted(ratings, reverse=True):  # Sort ratings DESC
+                            sort_columns.append(f"rating_{rating}_review_count")
+                    else:
+                        # If no ratings are selected, sort by all review counts
+                        sort_columns.extend([
+                            "rating_5_review_count",
+                            "rating_4_review_count",
+                            "rating_3_review_count",
+                            "rating_2_review_count",
+                            "rating_1_review_count"
+                        ])
+                    
+                    if trip_types:
+                        sort_columns.append(f"trip_types_{trip_types.lower()}")
+                            
+                    print("sort_columns", sort_columns)
+
+                    
+                    cluster_df = cluster_df.sort_values(by=sort_columns, ascending=False)
+                    
+                    if distance > 0:
+                        filtered_cluster_df = filter_locations_within_distance(cluster_df, matching_place_cluster, distance)
+                        cluster_df = filtered_cluster_df
+
+                    ranking_recommendation = cluster_df[['name', 'cluster', 'total_review', 'rating_5_review_count', 'rating_4_review_count', 'sentiment_calc', 'trip_types_solo', 'trip_types_couples', 'trip_types_business', 'trip_types_family', 'trip_types_friends', 'latitude', 'longitude']].head(10)
+
+                    st.dataframe(ranking_recommendation, use_container_width=True) 
+                    
+                                            
+                    if len(cluster_df) > 0:
+                        geoMapCoordinateData = pd.DataFrame({
+                            "Province": ranking_recommendation["name"],
+                            "Latitude": ranking_recommendation["latitude"],
+                            "Longitude": ranking_recommendation["longitude"],
+                            "Value": np.full(len(ranking_recommendation), fill_value=30)
+                        })
+                                            
+                        # Pydeck Layer
+                        layer = pdk.Layer(
+                            "ScatterplotLayer",
+                            data=geoMapCoordinateData,
+                            get_position="[Longitude, Latitude]",
+                            get_radius="Value * 1000",  # Adjust size based on Value
+                            get_fill_color="[Value * 2, 100, 150, 128]",  # Set 128 for 50% transparency (RGBA)
+                            pickable=True,
+                        )
+
+                        # Pydeck View
+                        view = pdk.ViewState(
+                            latitude=13.736717,
+                            longitude=100.523186,
+                            zoom=5,
+                            pitch=50,
+                        )
+
+                        # Pydeck Deck
+                        r = pdk.Deck(
+                            layers=[layer],
+                            initial_view_state=view,
+                            tooltip={"text": "{Province}\nValue: {Value}"},
+                        )
+
+                        # Streamlit app
+                        st.subheader("Thailand Geo Map by Province")
+                        st.pydeck_chart(r)
+                else:
+                    st.write("No matching Cluster found.")
+            else:
+                st.write("No matching TripAdvisor Place ID found.")
+
         else:
             st.warning("Please enter some text to search.")
+            
+            
