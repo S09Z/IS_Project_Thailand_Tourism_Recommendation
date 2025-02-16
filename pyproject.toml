@@ -59,6 +59,8 @@ ace-tools = "^0.0"
 hdbscan = "^0.8.40"
 umap = "^0.1.1"
 umap-learn = "^0.5.7"
+wordcloud = "^1.9.4"
+streamlit = "^1.42.0"
 
 [tool.poetry.group.dev.dependencies]
 ipykernel = "^6.29.5"
