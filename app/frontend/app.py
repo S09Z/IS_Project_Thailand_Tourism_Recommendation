@@ -13,7 +13,6 @@ import time
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 
-from content_filtering import semantic_clustering
 
 # Set page layout to "wide" (must be the first Streamlit command)
 st.set_page_config(layout="wide")
