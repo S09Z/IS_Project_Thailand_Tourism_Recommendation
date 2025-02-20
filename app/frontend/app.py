@@ -1,6 +1,7 @@
 import sys
 import os
 import numpy as np
+from sqlalchemy import create_engine, text
 from geopy.distance import geodesic
 
 # Ensure the current directory is in sys.path
@@ -20,7 +21,17 @@ st.set_page_config(layout="wide")
 # Icon URLs (or local paths)
 ICON_HOME = "https://img.icons8.com/fluency/48/home.png"  # Home icon
 ICON_DATA = "https://img.icons8.com/fluency/48/table.png"  # Data icon
-APP_LOGO = "https://img.icons8.com/fluency/48/sun.png"  # App logo
+APP_LOGO = "https://img.icons8.com/fluency/48/sun.png"  # App logoload_dotenv()
+
+DB_HOST = os.getenv("DB_NEON_HOST")
+DB_PORT = os.getenv("DB_NEON_PORT", "5432")
+DB_NAME = os.getenv("DB_NEON_NAME")
+DB_USER = os.getenv("DB_NEON_USER")
+DB_PASSWORD = os.getenv("DB_NEON_PASSWORD")
+
+# Create an SQLAlchemy engine
+DATABASE_URL = f"postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+engine = create_engine(DATABASE_URL)
 
 # Custom Logo and Title in Sidebar
 st.sidebar.markdown(
@@ -59,10 +70,21 @@ if st.sidebar.button(f"🏠   Home", use_container_width=False, type="tertiary")
 if st.sidebar.button(f"📊   Data", use_container_width=False, type="tertiary"):
     menu_choice = "Data"
 
-merged_tat_attractions_df = pd.read_csv('./merged_tat_attractions.csv')
-tripadvisor_attractions_details = pd.read_csv('./data/combined_details.csv')
-tripadvisor_reviews_sentiment = pd.read_csv('./../../test/prediction/SVN_Prediction.csv', encoding='utf-8').reset_index(drop=True)
-attractions_tags_cluster = pd.read_csv("./clustering_experiment/input/tag_embeddings.csv")
+def load_data_from_neon(query):
+    """Fetch data from PostgreSQL Neon into a Pandas DataFrame."""
+    with engine.connect() as connection:
+        return pd.read_sql(text(query), connection)  # ✅ Use `text(query)` for SQLAlchemy 2.x compatibility
+
+# ✅ Load data from PostgreSQL
+tripadvisor_reviews_sentiment = load_data_from_neon("SELECT * FROM is_project.review_sentiment;")
+attractions_tags_cluster = load_data_from_neon("SELECT * FROM is_project.tripadvisor_attractions_cluster;")
+tat_attractions = load_data_from_neon("SELECT * FROM is_project.tat_attractions;")
+tripadvisor_attractions_details = load_data_from_neon("SELECT * FROM is_project.tripadvisor_attractions_details;")
+
+# merged_tat_attractions_df = pd.read_csv('./merged_tat_attractions.csv')
+# tripadvisor_attractions_details = pd.read_csv('./data/combined_details.csv')
+# tripadvisor_reviews_sentiment = pd.read_csv('./../../test/prediction/SVN_Prediction.csv', encoding='utf-8').reset_index(drop=True)
+# attractions_tags_cluster = pd.read_csv("./clustering_experiment/input/tag_embeddings.csv")
 
 if menu_choice == "Data":
     st.title("Data Table")
