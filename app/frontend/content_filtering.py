@@ -78,10 +78,10 @@ print(filtered_attractions_df.head(5))
 
 # ✅ Ensure necessary columns exist
 if "introduction_th" not in filtered_attractions_df.columns or "place_name_th" not in filtered_attractions_df.columns:
-    raise KeyError("❌ Missing required columns in `tat_attractions`.")
+    print("❌ Missing required columns in `tat_attractions`.")
 # ✅ Ensure `filtered_attractions_df` is not empty
 if filtered_attractions_df.empty:
-    raise ValueError("❌ `filtered_attractions_df` is empty. Check your database filters.")
+    print("❌ `filtered_attractions_df` is empty. Check your database filters.")
 
 # ✅ Preprocess and merge text
 filtered_attractions_df["cleaned_introduction_th"] = filtered_attractions_df["introduction_th"].apply(lambda x: clean_thai_text(x) if isinstance(x, str) else "")
@@ -100,7 +100,7 @@ filtered_attractions_df = filtered_attractions_df[filtered_attractions_df["merge
 
 # ✅ Ensure text exists before training
 if filtered_attractions_df.empty:
-    raise ValueError("❌ No valid text found for training Word2Vec. Check text preprocessing.")
+    print("❌ No valid text found for training Word2Vec. Check text preprocessing.")
 
 # ✅ Prepare tokenized sentences
 tokenized_sentences = [word_tokenize(text) for text in filtered_attractions_df["merged_attraction_content"] if isinstance(text, str) and text.strip()]
@@ -108,50 +108,60 @@ tokenized_sentences = [word_tokenize(text) for text in filtered_attractions_df["
 # ✅ Debug: Print tokenized sentences sample
 print("🔍 Sample tokenized sentences:\n", tokenized_sentences[:5])
 
+attraction_vectors = []
 # ✅ Ensure tokenized sentences are valid
 if not tokenized_sentences:
-    raise ValueError("❌ No tokenized sentences available for Word2Vec training. Ensure preprocessing is correct.")
-
+    print("❌ No tokenized sentences available for Word2Vec training. Ensure preprocessing is correct.")
+else:
 # ✅ Initialize and train Word2Vec model
-w2v_model = Word2Vec(vector_size=100, min_count=1, workers=4)
-w2v_model.build_vocab(tokenized_sentences)  # ✅ Build vocabulary
-w2v_model.train(tokenized_sentences, total_examples=w2v_model.corpus_count, epochs=w2v_model.epochs)  # ✅ Train
+    w2v_model = Word2Vec(vector_size=100, min_count=1, workers=4)
+    w2v_model.build_vocab(tokenized_sentences)  # ✅ Build vocabulary
+    w2v_model.train(tokenized_sentences, total_examples=w2v_model.corpus_count, epochs=w2v_model.epochs)  # ✅ Train
 
 
-# ✅ Precompute vectors for all attractions
-attraction_vectors = np.array([vectorize_word2vec(text, w2v_model) for text in filtered_attractions_df["merged_attraction_content"]])
+    # ✅ Precompute vectors for all attractions
+    attraction_vectors = np.array([vectorize_word2vec(text, w2v_model) for text in filtered_attractions_df["merged_attraction_content"]])
 
 def semantic_clustering(input_text):
-    """Find the most semantically similar attraction for the given input text."""
-    cleaned_input_text = clean_thai_text(input_text)
-    input_vector = vectorize_word2vec(cleaned_input_text, w2v_model)
+    if len(attraction_vectors) == 0:
+        return {
+            "place_id": "",
+            "location_id": "",
+            "similarity_Score": "",
+            "Attraction Name": "",
+            "most_similar_name_and_introduction": ""
+        }
+    else:
+        """Find the most semantically similar attraction for the given input text."""
+        cleaned_input_text = clean_thai_text(input_text)
+        input_vector = vectorize_word2vec(cleaned_input_text, w2v_model)
 
-    # ✅ Compute similarity
-    similarity_scores = cosine_similarity([input_vector], attraction_vectors)[0]
-    most_similar_index = np.argmax(similarity_scores)
+        # ✅ Compute similarity
+        similarity_scores = cosine_similarity([input_vector], attraction_vectors)[0]
+        most_similar_index = np.argmax(similarity_scores)
 
-    # ✅ Handle potential key mismatch
-    if "place_id" not in filtered_attractions_df.columns:
-        raise KeyError("❌ Column `place_id` is missing in `filtered_attractions_df`.")
+        # ✅ Handle potential key mismatch
+        if "place_id" not in filtered_attractions_df.columns:
+            raise KeyError("❌ Column `place_id` is missing in `filtered_attractions_df`.")
 
-    # ✅ Get the result review
-    place_id = filtered_attractions_df.iloc[most_similar_index]["place_id"]
-    result_review = tripadvisor_reviews_sentiment[tripadvisor_reviews_sentiment["place_id"] == place_id]
+        # ✅ Get the result review
+        place_id = filtered_attractions_df.iloc[most_similar_index]["place_id"]
+        result_review = tripadvisor_reviews_sentiment[tripadvisor_reviews_sentiment["place_id"] == place_id]
 
-    if result_review.empty:
-        raise ValueError(f"❌ No reviews found for place_id: {place_id}")
+        if result_review.empty:
+            raise ValueError(f"❌ No reviews found for place_id: {place_id}")
 
-    # ✅ Ensure `location_id` column exists
-    if "location_id" not in result_review.columns:
-        raise KeyError("❌ Column `location_id` is missing in `tripadvisor_reviews_sentiment`.")
+        # ✅ Ensure `location_id` column exists
+        if "location_id" not in result_review.columns:
+            raise KeyError("❌ Column `location_id` is missing in `tripadvisor_reviews_sentiment`.")
 
-    print("Result review:\n", result_review["location_id"])
+        print("Result review:\n", result_review["location_id"])
 
-    # ✅ Return the best match
-    return {
-        "place_id": place_id,
-        "location_id": result_review["location_id"].tolist(),
-        "similarity_Score": similarity_scores[most_similar_index],
-        "Attraction Name": filtered_attractions_df.iloc[most_similar_index]["place_name_th"],
-        "most_similar_name_and_introduction": filtered_attractions_df.iloc[most_similar_index]["merged_attraction_content"]
-    }
+        # ✅ Return the best match
+        return {
+            "place_id": place_id,
+            "location_id": result_review["location_id"].tolist(),
+            "similarity_Score": similarity_scores[most_similar_index],
+            "Attraction Name": filtered_attractions_df.iloc[most_similar_index]["place_name_th"],
+            "most_similar_name_and_introduction": filtered_attractions_df.iloc[most_similar_index]["merged_attraction_content"]
+        }
