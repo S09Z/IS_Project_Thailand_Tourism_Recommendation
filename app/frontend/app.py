@@ -152,15 +152,15 @@ elif menu_choice == "Home":
     st.title("Filter TripAdvisor Reviews")
 
 
-    trip_type_options = ["Solo", "Couples", "Business", "Family", "Friends"]
-    default_trip_type = st.session_state.get("trip_types", "Solo")
+    trip_type_options = ["None", "Solo", "Couples", "Business", "Family", "Friends"]
+    default_trip_type = st.session_state.get("trip_types", "None")
     default_index = trip_type_options.index(default_trip_type) if default_trip_type in trip_type_options else 0
 
     # Function to clear all form inputs
     def clear_filters():
         st.session_state["search_text"] = ""
         st.session_state["distance"] = []
-        st.session_state["trip_types"] = "Solo"
+        st.session_state["trip_types"] = "None"
         st.session_state["ratings"] = []
 
     # Initialize session state variables for the form
@@ -169,7 +169,7 @@ elif menu_choice == "Home":
     if "distance" not in st.session_state:
         st.session_state["distance"] = 1000
     if "trip_types" not in st.session_state:
-        st.session_state["trip_types"] = "Solo"
+        st.session_state["trip_types"] = "None"
     if "ratings" not in st.session_state:
         st.session_state["ratings"] = []
 
@@ -244,20 +244,38 @@ elif menu_choice == "Home":
             filtered_reviews = filtered_reviews[filtered_reviews["location_id"].isin(result['location_id'])]
             content_filtering_review = filtered_reviews.iloc[0] if not filtered_reviews.empty else None
 
+            picked_tripadvisor_localtion_id = 0
+            if len(result['location_id']) > 0:
+                picked_tripadvisor_localtion_id = (result['location_id'][0])
 
             if content_filtering_review is not None:
                 location_ids = content_filtering_review["location_id"]
                 # st.dataframe(location_ids, use_container_width=True)
                 if isinstance(location_ids, (int, float, np.int64)):
                     location_ids = [location_ids]
+                
 
-                matching_place_cluster = attractions_tags_cluster[attractions_tags_cluster["location_id"].isin(result['location_id'])]
+                attractions_tags_cluster["location_id"] = attractions_tags_cluster["location_id"].fillna(0).astype(int)
+
+                matching_place_cluster = attractions_tags_cluster[
+                    attractions_tags_cluster["location_id"] == int(picked_tripadvisor_localtion_id)
+                ]
                 
                 if matching_place_cluster is not None:
                     cluster_df = attractions_tags_cluster[attractions_tags_cluster["cluster"].isin(matching_place_cluster['cluster'])]
+                    
+            #     print("Type of picked_tripadvisor_localtion_id:", type(picked_tripadvisor_localtion_id))
+            #     print("Data type of location_id column:", attractions_tags_cluster["location_id"].dtype)
+            #     print("Unique values in location_id column:", matching_place_cluster["location_id"].dtype)  # Print first 5 unique values
+            #     print("Unique values in location_id column:", attractions_tags_cluster["location_id"].unique()[:5])  # Print first 5 unique values
+                    
+            # print(f'==========================================result: {picked_tripadvisor_localtion_id}')
+            # print(matching_place_cluster['cluster'])
+            # print("================================================")
+            
 
             if content_filtering_review is not None:
-                st.write(f"**TripAdvisor Place ID:** {result['location_id'].iloc[0]}")
+                st.write(f"**TripAdvisor Place ID:** {picked_tripadvisor_localtion_id}")
                 if content_filtering_review is not None:
                     
                     label_mapping = {'negative': 0, 'neutral': 1, 'positive': 2}
@@ -270,15 +288,16 @@ elif menu_choice == "Home":
                         .rename(columns={"sentiment": "sentiment_calc"})
                     )
                     
+                    sentiment_sum_per_location["location_id"] = sentiment_sum_per_location["location_id"].astype(str).str.replace(",", "").astype(int)
                     
-                    st.subheader(f"Cluster Number: {matching_place_cluster['cluster'].iloc[0]} (Rows {len(cluster_df)}) - Ranking Recommendation")
-                    
+                    st.subheader(f"Cluster Number: {int(matching_place_cluster['cluster'].iloc[0])} (Rows {len(cluster_df)}) - Ranking Recommendation")
+
                     cluster_df = cluster_df.merge(sentiment_sum_per_location, on="location_id", how="left")
-                    
+
                     cluster_df["sentiment_calc"] = cluster_df["sentiment_calc"].fillna(0).astype(int)
-                    
+
                     cluster_df['total_review'] = cluster_df['rating_1_review_count'] + cluster_df['rating_2_review_count'] + cluster_df['rating_3_review_count'] + cluster_df['rating_4_review_count'] + cluster_df['rating_5_review_count']
-                    
+
                     sort_columns = ["sentiment_calc"]  # Always include sentiment as the first priority
 
                     # If the user selects ratings, use only the selected ones
@@ -294,13 +313,10 @@ elif menu_choice == "Home":
                             "rating_2_review_count",
                             "rating_1_review_count"
                         ])
-                    
-                    if trip_types:
-                        sort_columns.append(f"trip_types_{trip_types.lower()}")
-                            
-                    print("sort_columns", sort_columns)
 
-                    
+                    if trip_types and trip_types != "None":
+                        sort_columns.append(f"trip_types_{trip_types.lower()}")
+
                     cluster_df = cluster_df.sort_values(by=sort_columns, ascending=False)
                     
                     if distance > 0:
@@ -310,8 +326,7 @@ elif menu_choice == "Home":
                     ranking_recommendation = cluster_df[['name', 'cluster', 'total_review', 'rating_5_review_count', 'rating_4_review_count', 'sentiment_calc', 'trip_types_solo', 'trip_types_couples', 'trip_types_business', 'trip_types_family', 'trip_types_friends', 'latitude', 'longitude']].head(10)
 
                     st.dataframe(ranking_recommendation, use_container_width=True) 
-                    
-                                            
+
                     if len(cluster_df) > 0:
                         geoMapCoordinateData = pd.DataFrame({
                             "Province": ranking_recommendation["name"],
