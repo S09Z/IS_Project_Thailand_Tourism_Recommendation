@@ -1,5 +1,10 @@
 import sys
 import os
+
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+
+from content_filtering import semantic_clustering
+
 import numpy as np
 from sqlalchemy import create_engine, text
 from geopy.distance import geodesic
@@ -10,13 +15,15 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 import streamlit as st
 import pandas as pd
 import pydeck as pdk
-import time
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 
-
 # Set page layout to "wide" (must be the first Streamlit command)
-st.set_page_config(layout="wide")
+st.set_page_config(
+    layout="wide",
+    page_title="Thailand Tourism Recommendation", 
+    page_icon="🚀"
+)
 
 # Icon URLs (or local paths)
 ICON_HOME = "https://img.icons8.com/fluency/48/home.png"  # Home icon
@@ -32,6 +39,22 @@ DB_PASSWORD = os.getenv("DB_NEON_PASSWORD")
 # Create an SQLAlchemy engine
 DATABASE_URL = f"postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
 engine = create_engine(DATABASE_URL)
+
+def check_database_connection():
+    """Check if the database connection is successful."""
+    try:
+        with engine.connect() as connection:
+            connection.execute(text("SELECT 1"))  # Simple test query
+        return True
+    except Exception as e:
+        st.error(f"❌ Database connection failed: {e}")
+        return False
+
+# ✅ Run the connection check before loading the app
+if check_database_connection():
+    st.success("✅ Connected to the database successfully!")
+else:
+    st.stop()
 
 # Custom Logo and Title in Sidebar
 st.sidebar.markdown(
@@ -91,7 +114,7 @@ if menu_choice == "Data":
     st.header("Tourism Authority of Thailand Attractions Dataset", divider="gray")
     st.write("-")
     # Display the DataFrame as a table
-    st.dataframe(merged_tat_attractions_df, use_container_width=True)
+    st.dataframe(tat_attractions, use_container_width=True)
 
 
     st.header("Tripadvisor Attractions Details Dataset", divider="gray")
@@ -207,8 +230,6 @@ elif menu_choice == "Home":
         if search_text.strip():
             # Call the function and get results
             result = semantic_clustering(search_text)
-
-        
 
             # Display results
             st.subheader("Best Matched Attraction:")

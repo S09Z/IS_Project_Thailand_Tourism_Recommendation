@@ -177,3 +177,5 @@ test/models/output
 */node_modules
 *.csv
 *.csv
+
+*.json
