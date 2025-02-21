@@ -1,0 +1,91 @@
+name: Streamlit CI/CD with Security & Code Review
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+  pull-requests: write  # Required for PR code review comments
+
+jobs:
+  # 🛠️ Code Review & Security Check
+  review-and-security:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 🚀 Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: 🔎 Run TruffleHog (Secrets Detection)
+        uses: trufflesecurity/trufflehog@v3.62.0
+        with:
+          base: HEAD~1
+          head: HEAD
+          path: ./
+
+      - name: 📦 Run Dependency Security Scan (Safety)
+        run: pip install safety && safety check --full-report
+
+      - name: 🤖 AI-Based Code Review (CodeQL)
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: "security"
+
+      - name: 🔍 Comment Code Issues in PR
+        if: github.event_name == 'pull_request'
+        uses: thollander/actions-comment-pull-request@v2
+        with:
+          message: "🔍 Automated Code Review Completed. Please check linting & security issues before merging."
+
+  # 🛠️ Linting, Formatting, and Security Checks
+  lint-and-test:
+    needs: review-and-security
+    runs-on: ubuntu-latest
+    steps:
+      - name: 🚀 Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: 🐍 Set up Python 3.12
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.12"
+          cache: "poetry"
+
+      - name: 📦 Install Poetry
+        run: pip install poetry
+
+      - name: 📥 Install Dependencies
+        run: poetry install --no-interaction --no-ansi
+
+      - name: 🔎 Run Flake8 Linter
+        run: poetry run flake8 app
+
+      - name: 🎨 Run Black (Code Formatter)
+        run: poetry run black --check app
+
+      - name: 🛡️ Run Security Check (Bandit)
+        run: poetry run bandit -r app
+
+      - name: 🧪 Run Tests with Coverage
+        run: poetry run pytest --cov=app --cov-report=xml
+
+  # 🐳 Build Docker Image and Debug
+  build-and-debug:
+    needs: lint-and-test
+    runs-on: ubuntu-latest
+    steps:
+      - name: 🚀 Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: 🔎 Debug Docker Build Context
+        run: ls -R
+
+      - name: 🐳 Build Docker Image
+        run: docker build --no-cache -t my-streamlit-app .
+
+      - name: 🔎 Test Docker Container
+        run: docker run --rm my-streamlit-app streamlit --version

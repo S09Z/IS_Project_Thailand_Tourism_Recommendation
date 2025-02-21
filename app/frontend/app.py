@@ -290,79 +290,83 @@ elif menu_choice == "Home":
                     
                     sentiment_sum_per_location["location_id"] = sentiment_sum_per_location["location_id"].astype(str).str.replace(",", "").astype(int)
                     
-                    st.subheader(f"Cluster Number: {int(matching_place_cluster['cluster'].iloc[0])} (Rows {len(cluster_df)}) - Ranking Recommendation")
+                    if not matching_place_cluster.empty and matching_place_cluster is not None:
+                        st.subheader(f"Cluster Number: {int(matching_place_cluster['cluster'].iloc[0])} (Rows {len(cluster_df)}) - Ranking Recommendation")
 
-                    cluster_df = cluster_df.merge(sentiment_sum_per_location, on="location_id", how="left")
+                        cluster_df = cluster_df.merge(sentiment_sum_per_location, on="location_id", how="left")
 
-                    cluster_df["sentiment_calc"] = cluster_df["sentiment_calc"].fillna(0).astype(int)
+                        cluster_df["sentiment_calc"] = cluster_df["sentiment_calc"].fillna(0).astype(int)
 
-                    cluster_df['total_review'] = cluster_df['rating_1_review_count'] + cluster_df['rating_2_review_count'] + cluster_df['rating_3_review_count'] + cluster_df['rating_4_review_count'] + cluster_df['rating_5_review_count']
+                        cluster_df['total_review'] = cluster_df['rating_1_review_count'] + cluster_df['rating_2_review_count'] + cluster_df['rating_3_review_count'] + cluster_df['rating_4_review_count'] + cluster_df['rating_5_review_count']
 
-                    sort_columns = ["sentiment_calc"]  # Always include sentiment as the first priority
+                        sort_columns = ["sentiment_calc"]  # Always include sentiment as the first priority
 
-                    # If the user selects ratings, use only the selected ones
-                    if len(ratings) > 0:
-                        for rating in sorted(ratings, reverse=True):  # Sort ratings DESC
-                            sort_columns.append(f"rating_{rating}_review_count")
+                        # If the user selects ratings, use only the selected ones
+                        if len(ratings) > 0:
+                            for rating in sorted(ratings, reverse=True):  # Sort ratings DESC
+                                sort_columns.append(f"rating_{rating}_review_count")
+                        else:
+                            # If no ratings are selected, sort by all review counts
+                            sort_columns.extend([
+                                "rating_5_review_count",
+                                "rating_4_review_count",
+                                "rating_3_review_count",
+                                "rating_2_review_count",
+                                "rating_1_review_count"
+                            ])
+
+                        if trip_types and trip_types != "None":
+                            sort_columns.append(f"trip_types_{trip_types.lower()}")
+
+                        cluster_df = cluster_df.sort_values(by=sort_columns, ascending=False)
+                        
+                        if distance > 0:
+                            filtered_cluster_df = filter_locations_within_distance(cluster_df, matching_place_cluster, distance)
+                            cluster_df = filtered_cluster_df
+
+                        ranking_recommendation = cluster_df[['name', 'cluster', 'total_review', 'rating_5_review_count', 'rating_4_review_count', 'sentiment_calc', 'trip_types_solo', 'trip_types_couples', 'trip_types_business', 'trip_types_family', 'trip_types_friends', 'latitude', 'longitude']].head(10)
+
+                        st.dataframe(ranking_recommendation, use_container_width=True) 
+
+                        if len(cluster_df) > 0:
+                            geoMapCoordinateData = pd.DataFrame({
+                                "Province": ranking_recommendation["name"],
+                                "Latitude": ranking_recommendation["latitude"],
+                                "Longitude": ranking_recommendation["longitude"],
+                                "Value": np.full(len(ranking_recommendation), fill_value=30)
+                            })
+                                                
+                            # Pydeck Layer
+                            layer = pdk.Layer(
+                                "ScatterplotLayer",
+                                data=geoMapCoordinateData,
+                                get_position="[Longitude, Latitude]",
+                                get_radius="Value * 1000",  # Adjust size based on Value
+                                get_fill_color="[Value * 2, 100, 150, 128]",  # Set 128 for 50% transparency (RGBA)
+                                pickable=True,
+                            )
+
+                            # Pydeck View
+                            view = pdk.ViewState(
+                                latitude=13.736717,
+                                longitude=100.523186,
+                                zoom=5,
+                                pitch=50,
+                            )
+
+                            # Pydeck Deck
+                            r = pdk.Deck(
+                                layers=[layer],
+                                initial_view_state=view,
+                                tooltip={"text": "{Province}\nValue: {Value}"},
+                            )
+
+                            # Streamlit app
+                            st.subheader("Thailand Geo Map by Province")
+                            st.pydeck_chart(r)
+
                     else:
-                        # If no ratings are selected, sort by all review counts
-                        sort_columns.extend([
-                            "rating_5_review_count",
-                            "rating_4_review_count",
-                            "rating_3_review_count",
-                            "rating_2_review_count",
-                            "rating_1_review_count"
-                        ])
-
-                    if trip_types and trip_types != "None":
-                        sort_columns.append(f"trip_types_{trip_types.lower()}")
-
-                    cluster_df = cluster_df.sort_values(by=sort_columns, ascending=False)
-                    
-                    if distance > 0:
-                        filtered_cluster_df = filter_locations_within_distance(cluster_df, matching_place_cluster, distance)
-                        cluster_df = filtered_cluster_df
-
-                    ranking_recommendation = cluster_df[['name', 'cluster', 'total_review', 'rating_5_review_count', 'rating_4_review_count', 'sentiment_calc', 'trip_types_solo', 'trip_types_couples', 'trip_types_business', 'trip_types_family', 'trip_types_friends', 'latitude', 'longitude']].head(10)
-
-                    st.dataframe(ranking_recommendation, use_container_width=True) 
-
-                    if len(cluster_df) > 0:
-                        geoMapCoordinateData = pd.DataFrame({
-                            "Province": ranking_recommendation["name"],
-                            "Latitude": ranking_recommendation["latitude"],
-                            "Longitude": ranking_recommendation["longitude"],
-                            "Value": np.full(len(ranking_recommendation), fill_value=30)
-                        })
-                                            
-                        # Pydeck Layer
-                        layer = pdk.Layer(
-                            "ScatterplotLayer",
-                            data=geoMapCoordinateData,
-                            get_position="[Longitude, Latitude]",
-                            get_radius="Value * 1000",  # Adjust size based on Value
-                            get_fill_color="[Value * 2, 100, 150, 128]",  # Set 128 for 50% transparency (RGBA)
-                            pickable=True,
-                        )
-
-                        # Pydeck View
-                        view = pdk.ViewState(
-                            latitude=13.736717,
-                            longitude=100.523186,
-                            zoom=5,
-                            pitch=50,
-                        )
-
-                        # Pydeck Deck
-                        r = pdk.Deck(
-                            layers=[layer],
-                            initial_view_state=view,
-                            tooltip={"text": "{Province}\nValue: {Value}"},
-                        )
-
-                        # Streamlit app
-                        st.subheader("Thailand Geo Map by Province")
-                        st.pydeck_chart(r)
+                        st.write("No matching Cluster found.")
                 else:
                     st.write("No matching Cluster found.")
             else:
