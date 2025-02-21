@@ -52,29 +52,29 @@ def vectorize_word2vec(text, model):
     vectors = [model.wv[word] for word in tokens if word in model.wv]
     return np.mean(vectors, axis=0) if vectors else np.zeros(model.vector_size)
 
-print("\n📦 📦 📦  >>>>>>>>>>>>>>> tat_attractions.\n")
-print(tat_attractions.head(5))
+# print("\n📦 📦 📦  >>>>>>>>>>>>>>> tat_attractions.\n")
+# print(tat_attractions.head(5))
 
-print("\n📦 📦 📦  >>>>>>>>>>>>>>> attractions_tags_cluster\n")
-print(attractions_tags_cluster.head(5))
+# print("\n📦 📦 📦  >>>>>>>>>>>>>>> attractions_tags_cluster\n")
+# print(attractions_tags_cluster.head(5))
 
-print("\n📦 📦 📦  >>>>>>>>>>>>>>> tripadvisor_reviews_sentiment\n")
-print(tripadvisor_reviews_sentiment.head(5))
+# print("\n📦 📦 📦  >>>>>>>>>>>>>>> tripadvisor_reviews_sentiment\n")
+# print(tripadvisor_reviews_sentiment.head(5))
 
 # ✅ Filter data
-filtered_review_sentiment = tripadvisor_reviews_sentiment[
-    tripadvisor_reviews_sentiment["location_id"].isin(attractions_tags_cluster["location_id"])
-]
+# filtered_review_sentiment = tripadvisor_reviews_sentiment[
+#     tripadvisor_reviews_sentiment["location_id"].isin(attractions_tags_cluster["location_id"])
+# ]
 
 filtered_attractions_df = tat_attractions[
-    tat_attractions["place_id"].isin(filtered_review_sentiment["place_id"])
+    tat_attractions["place_id"].isin(tripadvisor_reviews_sentiment["place_id"])
 ]
 
-print("\n📦 📦 📦  >>>>>>>>>>>>>>> filtered_review_sentiment\n")
-print(filtered_review_sentiment.head(5))
+# print("\n📦 📦 📦  >>>>>>>>>>>>>>> filtered_review_sentiment\n")
+# print(filtered_review_sentiment.head(5))
 
-print("\n📦 📦 📦  >>>>>>>>>>>>>>> filtered_attractions_df\n")
-print(filtered_attractions_df.head(5))
+# print("\n📦 📦 📦  >>>>>>>>>>>>>>> filtered_attractions_df\n")
+# print(filtered_attractions_df.head(5))
 
 # ✅ Ensure necessary columns exist
 if "introduction_th" not in filtered_attractions_df.columns or "place_name_th" not in filtered_attractions_df.columns:
