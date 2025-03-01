@@ -8,15 +8,19 @@ from tqdm import tqdm
 load_dotenv()
 
 # ✅ Retrieve database credentials from .env
-DB_HOST = os.getenv("DB_NEON_HOST")
-DB_PORT = os.getenv("DB_NEON_PORT")
-DB_NAME = os.getenv("DB_NEON_NAME")
-DB_USER = os.getenv("DB_NEON_USER")
-DB_PASSWORD = os.getenv("DB_NEON_PASSWORD")
+DB_HOST = os.getenv("DB_POSTGRES_HOST")
+DB_PORT = os.getenv("DB_POSTGRES_PORT", "5432")
+DB_NAME = os.getenv("DB_POSTGRES_DATABASE")
+DB_USER = os.getenv("DB_POSTGRES_USER")
+DB_PASSWORD = os.getenv("DB_POSTGRES_PASSWORD")
+DB_SCHEMA = os.getenv("DB_POSTGRES_SCHEMA")
 
+# ************* if .env not update used `unset <>` then `source .env`
 
 def connect_db():
     """Establish a connection to NeonDB PostgreSQL."""
+    db_url = f"{DB_NAME}, user={DB_USER}, password={DB_PASSWORD}, host={DB_HOST}, port={DB_PORT}"
+    print(db_url)
     return psycopg2.connect(
         dbname=DB_NAME, user=DB_USER, password=DB_PASSWORD, host=DB_HOST, port=DB_PORT
     )
@@ -26,18 +30,18 @@ def create_schema():
     """Ensure the 'is_project' schema exists."""
     conn = connect_db()
     cursor = conn.cursor()
-    cursor.execute("CREATE SCHEMA IF NOT EXISTS is_project;")
+    cursor.execute(f"CREATE SCHEMA IF NOT EXISTS {DB_SCHEMA};")
     conn.commit()
     cursor.close()
     conn.close()
-    print("✅ Schema 'is_project' ensured.")
+    print(f"✅ Schema '{DB_SCHEMA}' ensured.")
 
 def create_tripadvisor_attractions_details_table():
     """Create 'attractions' table inside 'is_project' schema."""
     conn = connect_db()
     cursor = conn.cursor()
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS is_project.tripadvisor_attractions_details (
+    cursor.execute(f"""
+        CREATE TABLE IF NOT EXISTS {DB_SCHEMA}.tripadvisor_attractions_details (
             location_id NUMERIC PRIMARY KEY,
             name TEXT,
             description TEXT,
@@ -74,13 +78,13 @@ def create_tripadvisor_attractions_details_table():
     
 
 def import_tripadvisor_attractions_details(csv_file):
-    """Import data into 'is_project.tripadvisor_attractions_details' while handling NUMERIC fields correctly."""
+    """Import data into '{DB_SCHEMA}.tripadvisor_attractions_details' while handling NUMERIC fields correctly."""
     conn = connect_db()
     cursor = conn.cursor()
     
     df = pd.read_csv(csv_file)
 
-    print(f"📥 Importing {len(df)} rows into 'is_project.tripadvisor_attractions_details'...")
+    print(f"📥 Importing {len(df)} rows into '{DB_SCHEMA}.tripadvisor_attractions_details'...")
 
     # List of `NUMERIC` columns
     numeric_columns = [
@@ -114,8 +118,8 @@ def import_tripadvisor_attractions_details(csv_file):
     # Replace NaN values with None (for PostgreSQL NULL)
     df = df.where(pd.notna(df), None)
 
-    insert_query = """
-        INSERT INTO is_project.tripadvisor_attractions_details (
+    insert_query = f"""
+        INSERT INTO {DB_SCHEMA}.tripadvisor_attractions_details (
             location_id, name, description, web_url, latitude, longitude, website,
             write_review, rating, rating_image_url, num_reviews, ranking_geo_location_id,
             ranking_string, geo_location_name, ranking_out_of, ranking_no,
@@ -165,8 +169,8 @@ def create_review_sentiment_table():
     """Create 'review_sentiment' table inside 'is_project' schema."""
     conn = connect_db()
     cursor = conn.cursor()
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS is_project.review_sentiment (
+    cursor.execute(f"""
+        CREATE TABLE IF NOT EXISTS {DB_SCHEMA}.review_sentiment (
             id SERIAL PRIMARY KEY,
             place_id TEXT,
             location_id TEXT,
@@ -187,11 +191,11 @@ def import_review_sentiment(csv_file):
     
     df = pd.read_csv(csv_file)
 
-    print(f"📥 Importing {len(df)} rows into 'is_project.review_sentiment'...")
+    print(f"📥 Importing {len(df)} rows into '{DB_SCHEMA}.review_sentiment'...")
     for _, row in tqdm(df.iterrows(), total=len(df), desc="Progress", unit="row"):
         cursor.execute(
-            """
-            INSERT INTO is_project.review_sentiment (place_id, location_id, review_text, actual_sentiment, predicted_sentiment)
+            f"""
+            INSERT INTO {DB_SCHEMA}.review_sentiment (place_id, location_id, review_text, actual_sentiment, predicted_sentiment)
             VALUES (%s, %s, %s, %s, %s)
             """,
             (row["place_id"], row["location_id"], row["review_text"], row["actual_sentiment"], row["predicted_sentiment"]),
@@ -200,14 +204,14 @@ def import_review_sentiment(csv_file):
     conn.commit()
     cursor.close()
     conn.close()
-    print(f"✅ CSV data from '{csv_file}' imported into 'is_project.review_sentiment'!")
+    print(f"✅ CSV data from '{csv_file}' imported into '{DB_SCHEMA}.review_sentiment'!")
 
 def create_tripadvisor_attractions_cluster_table():
     """Create 'tripadvisor_attractions_cluster' table inside 'is_project' schema."""
     conn = connect_db()
     cursor = conn.cursor()
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS is_project.tripadvisor_attractions_cluster (
+    cursor.execute(f"""
+        CREATE TABLE IF NOT EXISTS {DB_SCHEMA}.tripadvisor_attractions_cluster (
             id SERIAL PRIMARY KEY,
             location_id NUMERIC,
             name TEXT,
@@ -253,11 +257,11 @@ def import_tripadvisor_attractions_cluster(csv_file):
     
     df = pd.read_csv(csv_file)
     
-    print(f"📥 Importing {len(df)} rows into 'is_project.tripadvisor_attractions_cluster'...")
+    print(f"📥 Importing {len(df)} rows into '{DB_SCHEMA}.tripadvisor_attractions_cluster'...")
     for _, row in tqdm(df.iterrows(), total=len(df), desc="Progress", unit="row"):
         cursor.execute(
-            """
-            INSERT INTO is_project.tripadvisor_attractions_cluster (
+            f"""
+            INSERT INTO {DB_SCHEMA}.tripadvisor_attractions_cluster (
                 location_id, name, description, web_url, latitude, longitude, website, write_review,
                 rating, rating_image_url, num_reviews, ranking_geo_location_id, ranking_string,
                 geo_location_name, ranking_out_of, ranking_no, rating_1_review_count, rating_2_review_count,
@@ -282,14 +286,14 @@ def import_tripadvisor_attractions_cluster(csv_file):
     conn.commit()
     cursor.close()
     conn.close()
-    print(f"✅ CSV data from '{csv_file}' imported into 'is_project.tripadvisor_attractions_cluster'!")
+    print(f"✅ CSV data from '{csv_file}' imported into '{DB_SCHEMA}.tripadvisor_attractions_cluster'!")
 
 def create_tat_attractions_table():
     """Create 'tat_attractions' table inside 'is_project' schema."""
     conn = connect_db()
     cursor = conn.cursor()
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS is_project.tat_attractions (
+    cursor.execute(f"""
+        CREATE TABLE IF NOT EXISTS {DB_SCHEMA}.tat_attractions (
             id SERIAL PRIMARY KEY,
             place_id TEXT,
             place_name_th TEXT,
@@ -327,11 +331,11 @@ def import_tat_attractions(csv_file):
     
     df = pd.read_csv(csv_file)
 
-    print(f"📥 Importing {len(df)} rows into 'is_project.tat_attractions'...")
+    print(f"📥 Importing {len(df)} rows into '{DB_SCHEMA}.tat_attractions'...")
     for _, row in tqdm(df.iterrows(), total=len(df), desc="Progress", unit="row"):
         cursor.execute(
-            """
-            INSERT INTO is_project.tat_attractions (
+            f"""
+            INSERT INTO {DB_SCHEMA}.tat_attractions (
                 place_id, place_name_th, introduction_th, category_name, category_id, latitude, longitude, postcode,
                 thumbnail_url, tags, province_id, province_name_th, district_id, district_name_th, sub_district_id,
                 sub_district_name_th, updated_at, introduction_en, place_name_en, province_name_en, district_name_en,
@@ -367,7 +371,7 @@ def drop_tables_with_cascade(table_names):
 
     try:
         for table in table_names:
-            query = f"DROP TABLE IF EXISTS is_project.{table} CASCADE;"
+            query = f"DROP TABLE IF EXISTS {DB_SCHEMA}.{table} CASCADE;"
             print(f"🗑 Dropping table: {table}")
             cursor.execute(query)
         
@@ -411,8 +415,8 @@ def drop_schemas_with_cascade(schema_names):
         conn.close()
 
 if __name__ == "__main__":
-    tables_to_drop = ["tripadvisor_attractions_details"]
-    drop_tables_with_cascade(tables_to_drop)
+    # tables_to_drop = ["tripadvisor_attractions_details"]
+    # drop_tables_with_cascade(tables_to_drop)
     
     # schemas_to_drop = ["striker_db"]
     # drop_schemas_with_cascade(schemas_to_drop)
@@ -420,14 +424,14 @@ if __name__ == "__main__":
     # ✅ Create schema and tables
     # create_schema()
     # create_review_sentiment_table()
-    # create_tripadvisor_attractions_cluster_table()
-    # create_tat_attractions_table() 
+    create_tripadvisor_attractions_cluster_table()
+    create_tat_attractions_table() 
     create_tripadvisor_attractions_details_table()
 
     # ✅ Import CSV files
     # import_review_sentiment("./test/prediction/SVN_Prediction.csv")
-    # import_tripadvisor_attractions_cluster("./app/frontend//clustering_experiment/input/tag_embeddings.csv")
-    # import_tat_attractions("./app/frontend/merged_tat_attractions.csv")  
+    import_tripadvisor_attractions_cluster("./app/clustering_experiment/input/tag_embeddings.csv")
+    import_tat_attractions("./app/frontend/merged_tat_attractions.csv")  
     import_tripadvisor_attractions_details("./app/frontend/data/combined_details.csv")
 
     print("🎉 All CSV data imported successfully!")

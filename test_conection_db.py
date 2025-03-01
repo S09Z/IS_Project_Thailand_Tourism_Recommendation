@@ -8,11 +8,12 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Database connection details
-DB_HOST = os.getenv("DB_NEON_HOST")
-DB_PORT = os.getenv("DB_NEON_PORT", "5432")
-DB_NAME = os.getenv("DB_NEON_NAME")
-DB_USER = os.getenv("DB_NEON_USER")
-DB_PASSWORD = os.getenv("DB_NEON_PASSWORD")
+DB_HOST = os.getenv("DB_POSTGRES_HOST")
+DB_PORT = os.getenv("DB_POSTGRES_PORT", "5432")
+DB_NAME = os.getenv("DB_POSTGRES_DATABASE")
+DB_USER = os.getenv("DB_POSTGRES_USER")
+DB_PASSWORD = os.getenv("DB_POSTGRES_PASSWORD")
+DB_SCHEMA = os.getenv("DB_POSTGRES_SCHEMA")
 
 # Create SQLAlchemy engine
 DATABASE_URL = f"postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
@@ -32,7 +33,7 @@ def test_database_connection(db_connection):
     
 def test_load_data_from_neon(db_connection):
     """Test if the function successfully loads data from Neon PostgreSQL"""
-    query = text("SELECT * FROM is_project.review_sentiment LIMIT 5;")
+    query = text(f"SELECT * FROM {DB_SCHEMA}.users LIMIT 5;")
 
     try:
         with db_connection as connection:

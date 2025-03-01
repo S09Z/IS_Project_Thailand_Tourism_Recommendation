@@ -64,6 +64,11 @@ streamlit = "^1.42.0"
 psycopg2 = "^2.9.10"
 tqdm = "^4.67.1"
 pytest = "^8.3.4"
+python-crfsuite = "^0.9.11"
+sentencepiece = "^0.2.0"
+deepcut = "^0.7.0.0"
+fasttext = "^0.9.3"
+faiss-cpu = "^1.10.0"
 
 [tool.poetry.group.dev.dependencies]
 ipykernel = "^6.29.5"
