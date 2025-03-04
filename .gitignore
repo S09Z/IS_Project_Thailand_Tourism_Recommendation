@@ -181,3 +181,4 @@ test/models/output
 *.json
 
 *.model
+*/nltk_data
