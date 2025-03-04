@@ -176,6 +176,9 @@ test/models/output
 
 */node_modules
 *.csv
-*.csv
+*.parquet
 
 *.json
+
+*.model
+*/nltk_data
