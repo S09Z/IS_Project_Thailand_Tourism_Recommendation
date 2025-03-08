@@ -8,11 +8,11 @@ from tqdm import tqdm
 load_dotenv()
 
 # ✅ Retrieve database credentials from .env
-DB_HOST = os.getenv("DB_POSTGRES_HOST")
-DB_PORT = os.getenv("DB_POSTGRES_PORT", "5432")
-DB_NAME = os.getenv("DB_POSTGRES_DATABASE")
-DB_USER = os.getenv("DB_POSTGRES_USER")
-DB_PASSWORD = os.getenv("DB_POSTGRES_PASSWORD")
+DB_HOST = os.getenv("DB_NEON_HOST")
+DB_PORT = os.getenv("DB_NEON_PORT", "5432")
+DB_NAME = os.getenv("DB_NEON_NAME")
+DB_USER = os.getenv("DB_NEON_USER")
+DB_PASSWORD = os.getenv("DB_NEON_PASSWORD")
 DB_SCHEMA = os.getenv("DB_POSTGRES_SCHEMA")
 
 # ************* if .env not update used `unset <>` then `source .env`
@@ -184,27 +184,27 @@ def create_review_sentiment_table():
     conn.close()
     print("✅ Table 'review_sentiment' ensured.")
 
-def import_review_sentiment(csv_file):
+def import_review_sentiment(parquet_file):
     """Import data from CSV into 'review_sentiment'."""
     conn = connect_db()
     cursor = conn.cursor()
     
-    df = pd.read_csv(csv_file)
+    df = pd.read_parquet(parquet_file)
 
     print(f"📥 Importing {len(df)} rows into '{DB_SCHEMA}.review_sentiment'...")
     for _, row in tqdm(df.iterrows(), total=len(df), desc="Progress", unit="row"):
         cursor.execute(
             f"""
-            INSERT INTO {DB_SCHEMA}.review_sentiment (place_id, location_id, review_text, actual_sentiment, predicted_sentiment)
-            VALUES (%s, %s, %s, %s, %s)
+            INSERT INTO {DB_SCHEMA}.review_sentiment (place_id, location_id, review_text, actual_sentiment, predicted_sentiment, language, review_id)
+            VALUES (%s, %s, %s, %s, %s, %s, %s)
             """,
-            (row["place_id"], row["location_id"], row["review_text"], row["actual_sentiment"], row["predicted_sentiment"]),
+            (row["place_id"], row["location_id"], row["review_text"], row["actual_sentiment"], row["predicted_sentiment"], row["language"], row["review_id"]),
         )
 
     conn.commit()
     cursor.close()
     conn.close()
-    print(f"✅ CSV data from '{csv_file}' imported into '{DB_SCHEMA}.review_sentiment'!")
+    print(f"✅ CSV data from '{parquet_file}' imported into '{DB_SCHEMA}.review_sentiment'!")
 
 def create_tripadvisor_attractions_cluster_table():
     """Create 'tripadvisor_attractions_cluster' table inside 'is_project' schema."""
@@ -424,14 +424,14 @@ if __name__ == "__main__":
     # ✅ Create schema and tables
     # create_schema()
     # create_review_sentiment_table()
-    create_tripadvisor_attractions_cluster_table()
-    create_tat_attractions_table() 
-    create_tripadvisor_attractions_details_table()
+    # create_tripadvisor_attractions_cluster_table()
+    # create_tat_attractions_table() 
+    # create_tripadvisor_attractions_details_table()
 
     # ✅ Import CSV files
-    # import_review_sentiment("./test/prediction/SVN_Prediction.csv")
-    import_tripadvisor_attractions_cluster("./app/clustering_experiment/input/tag_embeddings.csv")
-    import_tat_attractions("./app/frontend/merged_tat_attractions.csv")  
-    import_tripadvisor_attractions_details("./app/frontend/data/combined_details.csv")
+    import_review_sentiment("./test/prediction/SVM_TH_Prediction.parquet")
+    # import_tripadvisor_attractions_cluster("./app/clustering_experiment/input/tag_embeddings.csv")
+    # import_tat_attractions("./app/frontend/merged_tat_attractions.csv")  
+    # import_tripadvisor_attractions_details("./app/frontend/data/combined_details.csv")
 
     print("🎉 All CSV data imported successfully!")

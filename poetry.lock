@@ -1845,6 +1845,27 @@ files = [
 ]
 
 [[package]]
+name = "gdown"
+version = "5.2.0"
+description = "Google Drive Public File/Folder Downloader"
+optional = false
+python-versions = ">=3.8"
+groups = ["main"]
+files = [
+    {file = "gdown-5.2.0-py3-none-any.whl", hash = "sha256:33083832d82b1101bdd0e9df3edd0fbc0e1c5f14c9d8c38d2a35bf1683b526d6"},
+    {file = "gdown-5.2.0.tar.gz", hash = "sha256:2145165062d85520a3cd98b356c9ed522c5e7984d408535409fd46f94defc787"},
+]
+
+[package.dependencies]
+beautifulsoup4 = "*"
+filelock = "*"
+requests = {version = "*", extras = ["socks"]}
+tqdm = "*"
+
+[package.extras]
+test = ["build", "mypy", "pytest", "pytest-xdist", "ruff", "twine", "types-requests", "types-setuptools"]
+
+[[package]]
 name = "gensim"
 version = "4.3.3"
 description = "Python framework for fast Vector Space Modelling"
@@ -2120,6 +2141,24 @@ protobuf = ">=3.20.2,<4.21.1 || >4.21.1,<4.21.2 || >4.21.2,<4.21.3 || >4.21.3,<4
 grpc = ["grpcio (>=1.44.0,<2.0.0.dev0)"]
 
 [[package]]
+name = "googletrans"
+version = "4.0.2"
+description = "An unofficial Google Translate API for Python"
+optional = false
+python-versions = ">=3.8"
+groups = ["main"]
+files = [
+    {file = "googletrans-4.0.2-py3-none-any.whl", hash = "sha256:19e4fbbf7463e0cf4cd8f03479372910368730ac13dfb023fed6db58fd093547"},
+    {file = "googletrans-4.0.2.tar.gz", hash = "sha256:d9ef126b5d92fabeec0bb9ddcdbeecd43865fc00e17f1dfa07717837827a17de"},
+]
+
+[package.dependencies]
+httpx = {version = ">=0.27.2", extras = ["http2"]}
+
+[package.extras]
+dev = ["pytest", "pytest-asyncio", "pytest-cov", "ruff (>=0.7)"]
+
+[[package]]
 name = "graphviz"
 version = "0.20.3"
 description = "Simple Python interface for Graphviz"
@@ -2304,6 +2343,22 @@ files = [
 ]
 
 [[package]]
+name = "h2"
+version = "4.2.0"
+description = "Pure-Python HTTP/2 protocol implementation"
+optional = false
+python-versions = ">=3.9"
+groups = ["main"]
+files = [
+    {file = "h2-4.2.0-py3-none-any.whl", hash = "sha256:479a53ad425bb29af087f3458a61d30780bc818e4ebcf01f0b536ba916462ed0"},
+    {file = "h2-4.2.0.tar.gz", hash = "sha256:c8a52129695e88b1a0578d8d2cc6842bbd79128ac685463b887ee278126ad01f"},
+]
+
+[package.dependencies]
+hpack = ">=4.1,<5"
+hyperframe = ">=6.1,<7"
+
+[[package]]
 name = "h5py"
 version = "3.13.0"
 description = "Read and write HDF5 files from Python"
@@ -2374,6 +2429,18 @@ scikit-learn = ">=0.20"
 scipy = ">=1.0"
 
 [[package]]
+name = "hpack"
+version = "4.1.0"
+description = "Pure-Python HPACK header encoding"
+optional = false
+python-versions = ">=3.9"
+groups = ["main"]
+files = [
+    {file = "hpack-4.1.0-py3-none-any.whl", hash = "sha256:157ac792668d995c657d93111f46b4535ed114f0c9c8d672271bbec7eae1b496"},
+    {file = "hpack-4.1.0.tar.gz", hash = "sha256:ec5eca154f7056aa06f196a557655c5b009b382873ac8d1e66e79e87535f1dca"},
+]
+
+[[package]]
 name = "httpcore"
 version = "1.0.7"
 description = "A minimal low-level HTTP client."
@@ -2410,6 +2477,7 @@ files = [
 [package.dependencies]
 anyio = "*"
 certifi = "*"
+h2 = {version = ">=3,<5", optional = true, markers = "extra == \"http2\""}
 httpcore = "==1.*"
 idna = "*"
 
@@ -2454,6 +2522,18 @@ tensorflow-testing = ["keras (<3.0)", "tensorflow"]
 testing = ["InquirerPy (==0.3.4)", "Jinja2", "Pillow", "aiohttp", "fastapi", "gradio (>=4.0.0)", "jedi", "numpy", "pytest (>=8.1.1,<8.2.2)", "pytest-asyncio", "pytest-cov", "pytest-env", "pytest-mock", "pytest-rerunfailures", "pytest-vcr", "pytest-xdist", "soundfile", "urllib3 (<2.0)"]
 torch = ["safetensors[torch]", "torch"]
 typing = ["types-PyYAML", "types-requests", "types-simplejson", "types-toml", "types-tqdm", "types-urllib3", "typing-extensions (>=4.8.0)"]
+
+[[package]]
+name = "hyperframe"
+version = "6.1.0"
+description = "Pure-Python HTTP/2 framing"
+optional = false
+python-versions = ">=3.9"
+groups = ["main"]
+files = [
+    {file = "hyperframe-6.1.0-py3-none-any.whl", hash = "sha256:b03380493a519fce58ea5af42e4a42317bf9bd425596f7a0835ffce80f1a42e5"},
+    {file = "hyperframe-6.1.0.tar.gz", hash = "sha256:f630908a00854a7adeabd6382b43923a4c4cd4b821fcb527e6ab9e15382a3b08"},
+]
 
 [[package]]
 name = "hyperlink"
@@ -4009,6 +4089,23 @@ developer = ["changelist (==0.4)", "mypy (>=1.1)", "pre-commit (>=3.2)", "rtoml"
 doc = ["nb2plots (>=0.7)", "nbconvert (<7.9)", "numpydoc (>=1.6)", "pillow (>=9.4)", "pydata-sphinx-theme (>=0.14)", "sphinx (>=7)", "sphinx-gallery (>=0.14)", "texext (>=0.6.7)"]
 extra = ["lxml (>=4.6)", "pydot (>=1.4.2)", "pygraphviz (>=1.11)", "sympy (>=1.10)"]
 test = ["pytest (>=7.2)", "pytest-cov (>=4.0)"]
+
+[[package]]
+name = "nlpaug"
+version = "1.1.11"
+description = "Natural language processing augmentation library for deep neural networks"
+optional = false
+python-versions = ">=3.7"
+groups = ["main"]
+files = [
+    {file = "nlpaug-1.1.11-py3-none-any.whl", hash = "sha256:01d3befce09e46cb7d990839e0b7dd80ba3e991485f772e678d329ffeb97fd80"},
+]
+
+[package.dependencies]
+gdown = ">=4.0.0"
+numpy = ">=1.16.2"
+pandas = ">=1.2.0"
+requests = ">=2.22.0"
 
 [[package]]
 name = "nltk"
@@ -6160,6 +6257,7 @@ files = [
 certifi = ">=2017.4.17"
 charset-normalizer = ">=2,<4"
 idna = ">=2.5,<4"
+PySocks = {version = ">=1.5.6,<1.5.7 || >1.5.7", optional = true, markers = "extra == \"socks\""}
 urllib3 = ">=1.21.1,<3"
 
 [package.extras]
@@ -7577,6 +7675,45 @@ files = [
 ]
 
 [[package]]
+name = "textaugment"
+version = "2.0.0"
+description = "A library for augmenting text for natural language processing applications."
+optional = false
+python-versions = "*"
+groups = ["main"]
+files = [
+    {file = "textaugment-2.0.0-py3-none-any.whl", hash = "sha256:823ea30743711375d6ae95ca81eae5e350e3acc13641d60d368f94283fc22182"},
+    {file = "textaugment-2.0.0.tar.gz", hash = "sha256:1964518a1a27e53919ea3199801a01f956441f028c787af69c45c799b9520c83"},
+]
+
+[package.dependencies]
+gensim = ">=4.0"
+googletrans = ">=2"
+nltk = "*"
+numpy = "*"
+textblob = "*"
+
+[[package]]
+name = "textblob"
+version = "0.19.0"
+description = "Simple, Pythonic text processing. Sentiment analysis, part-of-speech tagging, noun phrase parsing, and more."
+optional = false
+python-versions = ">=3.9"
+groups = ["main"]
+files = [
+    {file = "textblob-0.19.0-py3-none-any.whl", hash = "sha256:af6b8827886f1ee839a625f4865e5abb1584eae8db2259627b33a6a0b02ef19d"},
+    {file = "textblob-0.19.0.tar.gz", hash = "sha256:0a3d06a47cf7759441da3418c4843aed3797a998beba2108c6245a2020f83b01"},
+]
+
+[package.dependencies]
+nltk = ">=3.9"
+
+[package.extras]
+dev = ["pre-commit (>=3.5,<4.0)", "textblob[tests]", "tox"]
+docs = ["PyYAML (==6.0.2)", "sphinx (==8.0.2)", "sphinx-issues (==4.1.0)"]
+tests = ["numpy", "pytest"]
+
+[[package]]
 name = "tf-keras"
 version = "2.17.0"
 description = "Deep learning for humans."
@@ -8990,4 +9127,4 @@ recommender = []
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.12,<3.13"
-content-hash = "fffd583b9fe960965641872990793fa20adff9831e40d76a752ec6d2bb3d72ed"
+content-hash = "393d534d39469fd0aae6d4e68f7963289f0b77309ddf3dee8ae412bcd0601d76"
