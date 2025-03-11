@@ -73,6 +73,8 @@ plotly = "^6.0.0"
 joblib = "^1.4.2"
 textaugment = "^2.0.0"
 nlpaug = "^1.1.11"
+kneed = "^0.8.5"
+pyldavis = "^3.4.1"
 
 [tool.poetry.group.dev.dependencies]
 ipykernel = "^6.29.5"
