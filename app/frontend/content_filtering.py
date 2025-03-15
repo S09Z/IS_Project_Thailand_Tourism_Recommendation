@@ -122,46 +122,53 @@ else:
     # ✅ Precompute vectors for all attractions
     attraction_vectors = np.array([vectorize_word2vec(text, w2v_model) for text in filtered_attractions_df["merged_attraction_content"]])
 
+def get_top_5_similar_places(query_vector, place_vectors, place_names):
+    
+    similarity_scores = np.dot(place_vectors, query_vector) / (
+        np.linalg.norm(place_vectors, axis=1) * np.linalg.norm(query_vector)
+    )
+
+    top_5_indices = np.argsort(similarity_scores)[::-1][:5]  
+    top_5_places = [(place_names[i], similarity_scores[i]) for i in top_5_indices]
+    return top_5_places
+
 def semantic_clustering(input_text):
     if len(attraction_vectors) == 0:
-        return {
-            "place_id": "",
-            "location_id": "",
-            "similarity_Score": "",
-            "Attraction Name": "",
-            "most_similar_name_and_introduction": ""
-        }
-    else:
-        """Find the most semantically similar attraction for the given input text."""
-        cleaned_input_text = clean_thai_text(input_text)
-        input_vector = vectorize_word2vec(cleaned_input_text, w2v_model)
+        return []
 
-        # ✅ Compute similarity
-        similarity_scores = cosine_similarity([input_vector], attraction_vectors)[0]
-        most_similar_index = np.argmax(similarity_scores)
+    # ✅ ทำความสะอาดและแปลงข้อความเป็นเวกเตอร์
+    cleaned_input_text = clean_thai_text(input_text)
+    input_vector = vectorize_word2vec(cleaned_input_text, w2v_model)
 
-        # ✅ Handle potential key mismatch
-        if "place_id" not in filtered_attractions_df.columns:
-            raise KeyError("❌ Column `place_id` is missing in `filtered_attractions_df`.")
+    # ✅ คำนวณ Similarity Scores
+    similarity_scores = cosine_similarity([input_vector], attraction_vectors)[0]
 
-        # ✅ Get the result review
-        place_id = filtered_attractions_df.iloc[most_similar_index]["place_id"]
+    # ✅ ดึง 5 อันดับที่มีคะแนนสูงสุด
+    top_5_indices = np.argsort(similarity_scores)[::-1][:5]
+
+    # ✅ ตรวจสอบคอลัมน์ที่จำเป็น
+    if "place_id" not in filtered_attractions_df.columns:
+        raise KeyError("❌ Column `place_id` is missing in `filtered_attractions_df`.")
+
+    # ✅ สร้างผลลัพธ์ Top 5
+    results = []
+    for index in top_5_indices:
+        place_id = filtered_attractions_df.iloc[index]["place_id"]
+        place_name = filtered_attractions_df.iloc[index]["place_name_th"]
+        merged_content = filtered_attractions_df.iloc[index]["merged_attraction_content"]
+        similarity_score = similarity_scores[index]
+
+        # ✅ ดึง location_id จากรีวิว
         result_review = tripadvisor_reviews_sentiment[tripadvisor_reviews_sentiment["place_id"] == place_id]
+        location_id = result_review["location_id"].tolist() if not result_review.empty else []
 
-        if result_review.empty:
-            raise ValueError(f"❌ No reviews found for place_id: {place_id}")
-
-        # ✅ Ensure `location_id` column exists
-        if "location_id" not in result_review.columns:
-            raise KeyError("❌ Column `location_id` is missing in `tripadvisor_reviews_sentiment`.")
-
-        print("Result review:\n", result_review["location_id"])
-
-        # ✅ Return the best match
-        return {
+        # ✅ เพิ่มผลลัพธ์ลงใน List
+        results.append({
             "place_id": place_id,
-            "location_id": result_review["location_id"].tolist(),
-            "similarity_Score": similarity_scores[most_similar_index],
-            "Attraction Name": filtered_attractions_df.iloc[most_similar_index]["place_name_th"],
-            "most_similar_name_and_introduction": filtered_attractions_df.iloc[most_similar_index]["merged_attraction_content"]
-        }
+            "location_id": location_id,
+            "similarity_Score": similarity_score,
+            "Attraction Name": place_name,
+            "most_similar_name_and_introduction": merged_content
+        })
+
+    return results
