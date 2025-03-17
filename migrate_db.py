@@ -429,8 +429,8 @@ if __name__ == "__main__":
     # create_tripadvisor_attractions_details_table()
 
     # ✅ Import CSV files
-    import_review_sentiment("./test/prediction/SVM_TH_Prediction.parquet")
-    # import_tripadvisor_attractions_cluster("./app/clustering_experiment/input/tag_embeddings.csv")
+    # import_review_sentiment("./test/prediction/SVM_TH_Prediction.parquet")
+    import_tripadvisor_attractions_cluster("./app/clustering_experiment/input/tag_embeddings.csv")
     # import_tat_attractions("./app/frontend/merged_tat_attractions.csv")  
     # import_tripadvisor_attractions_details("./app/frontend/data/combined_details.csv")
 

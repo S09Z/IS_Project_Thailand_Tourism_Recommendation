@@ -325,25 +325,6 @@ elif menu_choice == "Home":
             st.session_state.selected_places = {} 
             st.session_state.segmented_control = None 
             st.warning("ไม่พบข้อมูล กรุณาตรวจสอบคำค้นหาของท่านเป็นค่าว่าง หรือตรงตามภาษาที่เลือก หรือไม่")
-        
-
-if "user_feedback" not in st.session_state:
-    st.session_state.user_feedback = {}
-if "selected_feedback" not in st.session_state:
-    st.session_state.selected_feedback = None
-
-sentiment_mapping = ["one", "two", "three", "four", "five"]
-
-selected = st.feedback("stars", key="feedback_stars")  
-
-# ✅ แสดงผลลัพธ์ทันทีเมื่อผู้ใช้ให้คะแนน
-if selected is not None:
-    st.session_state.selected_feedback = selected
-    st.success(f"✅ Feedback submitted: {sentiment_mapping[selected]} star(s).")
-
-# ✅ แสดงค่าที่เลือก
-if st.session_state.selected_feedback is not None:
-    st.markdown(f"⭐ You selected {sentiment_mapping[st.session_state.selected_feedback]} star(s).")
 
 if st.session_state.attraction_options:
     # if not st.session_state.segmented_control and st.session_state.attraction_options:
@@ -460,7 +441,7 @@ if st.session_state.attraction_options:
 
                         ranking_recommendation = cluster_df[['name', 'cluster', 'total_review', 'rating_5_review_count', 'rating_4_review_count', 'sentiment_calc', 'trip_types_solo', 'trip_types_couples', 'trip_types_business', 'trip_types_family', 'trip_types_friends', 'latitude', 'longitude']].head(10)
 
-                        st.dataframe(ranking_recommendation.head(5), use_container_width=True) 
+                        st.dataframe(ranking_recommendation.head(10), use_container_width=True) 
 
                         if len(cluster_df) > 0:
                             geoMapCoordinateData = pd.DataFrame({
