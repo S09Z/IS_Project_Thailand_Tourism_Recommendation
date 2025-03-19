@@ -79,7 +79,7 @@ filtered_attractions_df = tat_attractions[
     tat_attractions["place_id"].isin(tripadvisor_reviews_sentiment["place_id"])
 ]
 
-filtered_attractions_df.to_csv("./filtered_attractions_df.csv", index=False, encoding="utf-8")
+# filtered_attractions_df.to_csv("./filtered_attractions_df.csv", index=False, encoding="utf-8")
 
 # ✅ Ensure necessary columns exist
 if "introduction_th" not in filtered_attractions_df.columns or "place_name_th" not in filtered_attractions_df.columns:
