@@ -8,11 +8,11 @@ from tqdm import tqdm
 load_dotenv()
 
 # ✅ Retrieve database credentials from .env
-DB_HOST = os.getenv("DB_NEON_HOST")
-DB_PORT = os.getenv("DB_NEON_PORT", "5432")
-DB_NAME = os.getenv("DB_NEON_NAME")
-DB_USER = os.getenv("DB_NEON_USER")
-DB_PASSWORD = os.getenv("DB_NEON_PASSWORD")
+DB_HOST = os.getenv("DB_POSTGRES_HOST")
+DB_PORT = os.getenv("DB_POSTGRES_PORT", "5432")
+DB_NAME = os.getenv("DB_POSTGRES_DATABASE")
+DB_USER = os.getenv("DB_POSTGRES_USER")
+DB_PASSWORD = os.getenv("DB_POSTGRES_PASSWORD")
 DB_SCHEMA = os.getenv("DB_POSTGRES_SCHEMA")
 
 # ************* if .env not update used `unset <>` then `source .env`
@@ -42,7 +42,7 @@ def create_tripadvisor_attractions_details_table():
     cursor = conn.cursor()
     cursor.execute(f"""
         CREATE TABLE IF NOT EXISTS {DB_SCHEMA}.tripadvisor_attractions_details (
-            location_id NUMERIC PRIMARY KEY,
+            location_id BIGINT PRIMARY KEY,
             name TEXT,
             description TEXT,
             web_url TEXT,
@@ -76,7 +76,6 @@ def create_tripadvisor_attractions_details_table():
     conn.close()
     print("✅ Table 'attractions' ensured.")
     
-
 def import_tripadvisor_attractions_details(csv_file):
     """Import data into '{DB_SCHEMA}.tripadvisor_attractions_details' while handling NUMERIC fields correctly."""
     conn = connect_db()
@@ -173,10 +172,12 @@ def create_review_sentiment_table():
         CREATE TABLE IF NOT EXISTS {DB_SCHEMA}.review_sentiment (
             id SERIAL PRIMARY KEY,
             place_id TEXT,
-            location_id TEXT,
+            location_id NUMERIC(15, 0),
             review_text TEXT,
             actual_sentiment TEXT,
-            predicted_sentiment TEXT
+            predicted_sentiment TEXT,
+            language TEXT,
+            review_id NUMERIC(15, 0)
         );
     """)
     conn.commit()
@@ -213,7 +214,7 @@ def create_tripadvisor_attractions_cluster_table():
     cursor.execute(f"""
         CREATE TABLE IF NOT EXISTS {DB_SCHEMA}.tripadvisor_attractions_cluster (
             id SERIAL PRIMARY KEY,
-            location_id NUMERIC,
+            location_id BIGINT,
             name TEXT,
             description TEXT,
             web_url TEXT,
@@ -427,10 +428,14 @@ if __name__ == "__main__":
     # create_tripadvisor_attractions_cluster_table()
     # create_tat_attractions_table() 
     # create_tripadvisor_attractions_details_table()
+    # df = pd.read_csv("./test/prediction/SVM_EN_Prediction.csv", encoding='utf-8')
+    # df['review_id'] = 0
+    # df['language'] = "EN"
+    # df.to_parquet("./test/prediction/SVM_EN_Prediction.parquet")
 
     # ✅ Import CSV files
-    # import_review_sentiment("./test/prediction/SVM_TH_Prediction.parquet")
-    import_tripadvisor_attractions_cluster("./app/clustering_experiment/input/tag_embeddings.csv")
+    import_review_sentiment("./test/prediction/SVM_EN_Prediction.parquet")
+    # import_tripadvisor_attractions_cluster("./app/clustering_experiment/input/tag_embeddings.csv")
     # import_tat_attractions("./app/frontend/merged_tat_attractions.csv")  
     # import_tripadvisor_attractions_details("./app/frontend/data/combined_details.csv")
 
