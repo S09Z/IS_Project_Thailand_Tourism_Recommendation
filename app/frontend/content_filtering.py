@@ -15,17 +15,17 @@ from gensim.models import FastText
 # Load environment variables
 load_dotenv()
 
-# DB_HOST = os.getenv("DB_NEON_HOST")
-# DB_PORT = os.getenv("DB_NEON_PORT", "5432")
-# DB_NAME = os.getenv("DB_NEON_NAME")
-# DB_USER = os.getenv("DB_NEON_USER")
-# DB_PASSWORD = os.getenv("DB_NEON_PASSWORD")
+DB_HOST = os.getenv("DB_NEON_HOST")
+DB_PORT = os.getenv("DB_NEON_PORT", "5432")
+DB_NAME = os.getenv("DB_NEON_NAME")
+DB_USER = os.getenv("DB_NEON_USER")
+DB_PASSWORD = os.getenv("DB_NEON_PASSWORD")
 
-DB_HOST = os.getenv("DB_POSTGRES_HOST")
-DB_PORT = os.getenv("DB_POSTGRES_PORT", "5432")
-DB_NAME = os.getenv("DB_POSTGRES_DATABASE")
-DB_USER = os.getenv("DB_POSTGRES_USER")
-DB_PASSWORD = os.getenv("DB_POSTGRES_PASSWORD")
+# DB_HOST = os.getenv("DB_POSTGRES_HOST")
+# DB_PORT = os.getenv("DB_POSTGRES_PORT", "5432")
+# DB_NAME = os.getenv("DB_POSTGRES_DATABASE")
+# DB_USER = os.getenv("DB_POSTGRES_USER")
+# DB_PASSWORD = os.getenv("DB_POSTGRES_PASSWORD")
 
 # Create an SQLAlchemy engine
 DATABASE_URL = f"postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
