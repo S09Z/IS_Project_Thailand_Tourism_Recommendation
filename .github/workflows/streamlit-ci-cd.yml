@@ -34,10 +34,15 @@ jobs:
           pip install safety==3.3.1
           safety scan --full-report --detailed-output || true
 
-      - name: 🤖 AI-Based Code Review (CodeQL)
+      - name: 🧠 Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: python
+      
+      - name: 🤖 Analyze Code with CodeQL
         uses: github/codeql-action/analyze@v3
         with:
-          category: "security"
+          category: security
 
       - name: 🔍 Comment Code Issues in PR
         if: github.event_name == 'pull_request'
