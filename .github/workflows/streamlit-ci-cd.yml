@@ -28,8 +28,11 @@ jobs:
           path: ./
 
       - name: 📦 Run Dependency Security Scan (Safety)
+        env:
+          SAFETY_API_KEY: ${{ secrets.SAFETY_API_KEY }}
         run: |
           pip install safety
+          safety auth token $SAFETY_API_KEY
           safety scan --full-report
 
       - name: 🤖 AI-Based Code Review (CodeQL)
