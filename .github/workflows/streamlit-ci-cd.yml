@@ -64,11 +64,12 @@ jobs:
           python-version: "3.12"
           cache: "poetry"
 
-      - name: 📦 Install Poetry via pipx
-        run: |
-          pip install pipx
-          pipx ensurepath
-          pipx install poetry
+      - name: Setup Poetry
+        uses: threeal/setup-poetry-action@v1.1.0
+        with:
+          version: 1.5.1
+          cache: true
+      - run: poetry --version
       
       - name: 🔍 Check Poetry Version
         run: poetry --version
