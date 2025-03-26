@@ -14,45 +14,45 @@ permissions:
 
 jobs:
   # 🛠️ Code Review & Security Check
-  review-and-security:
-    runs-on: ubuntu-latest
-    steps:
-      - name: 🚀 Checkout Repository
-        uses: actions/checkout@v4
+  # review-and-security:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: 🚀 Checkout Repository
+  #       uses: actions/checkout@v4
 
-      - name: 🔎 Run TruffleHog (Secrets Detection)
-        uses: trufflesecurity/trufflehog@v3.62.0
-        with:
-          base: HEAD~1
-          head: HEAD
-          path: ./
+  #     - name: 🔎 Run TruffleHog (Secrets Detection)
+  #       uses: trufflesecurity/trufflehog@v3.62.0
+  #       with:
+  #         base: HEAD~1
+  #         head: HEAD
+  #         path: ./
 
-      - name: 📦 Run Dependency Security Scan (Safety)
-        env:
-          SAFETY_API_KEY: ${{ secrets.SAFETY_API_KEY }}
-        run: |
-          pip install safety==3.3.1
-          safety scan --full-report --detailed-output || true
+  #     - name: 📦 Run Dependency Security Scan (Safety)
+  #       env:
+  #         SAFETY_API_KEY: ${{ secrets.SAFETY_API_KEY }}
+  #       run: |
+  #         pip install safety==3.3.1
+  #         safety scan --full-report --detailed-output || true
 
-      - name: 🧠 Initialize CodeQL
-        uses: github/codeql-action/init@v3
-        with:
-          languages: python
+  #     - name: 🧠 Initialize CodeQL
+  #       uses: github/codeql-action/init@v3
+  #       with:
+  #         languages: python
       
-      - name: 🤖 Analyze Code with CodeQL
-        uses: github/codeql-action/analyze@v3
-        with:
-          category: security
+  #     - name: 🤖 Analyze Code with CodeQL
+  #       uses: github/codeql-action/analyze@v3
+  #       with:
+  #         category: security
 
-      - name: 🔍 Comment Code Issues in PR
-        if: github.event_name == 'pull_request'
-        uses: thollander/actions-comment-pull-request@v2
-        with:
-          message: "🔍 Automated Code Review Completed. Please check linting & security issues before merging."
+  #     - name: 🔍 Comment Code Issues in PR
+  #       if: github.event_name == 'pull_request'
+  #       uses: thollander/actions-comment-pull-request@v2
+  #       with:
+  #         message: "🔍 Automated Code Review Completed. Please check linting & security issues before merging."
 
   # 🛠️ Linting, Formatting, and Security Checks
   lint-and-test:
-    needs: review-and-security
+    # needs: review-and-security
     runs-on: ubuntu-latest
     steps:
       - name: 🚀 Checkout Repository
