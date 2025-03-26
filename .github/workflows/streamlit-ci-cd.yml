@@ -64,10 +64,12 @@ jobs:
           python-version: "3.12"
           cache: "poetry"
       
-      - name: 📦 Install Poetry
+      - name: 📦 Install Poetry and Export Path
         run: |
           curl -sSL https://install.python-poetry.org | python3 -
           echo "$HOME/.local/bin" >> $GITHUB_PATH
+          export PATH="$HOME/.local/bin:$PATH"
+          poetry --version
       
       - name: 🔍 Check Poetry Version
         run: poetry --version
