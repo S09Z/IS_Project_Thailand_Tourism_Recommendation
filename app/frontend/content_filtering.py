@@ -15,35 +15,35 @@ from gensim.models import FastText
 # Load environment variables
 load_dotenv()
 
-DB_HOST = os.getenv("DB_NEON_HOST")
-DB_PORT = os.getenv("DB_NEON_PORT", "5432")
-DB_NAME = os.getenv("DB_NEON_NAME")
-DB_USER = os.getenv("DB_NEON_USER")
-DB_PASSWORD = os.getenv("DB_NEON_PASSWORD")
+# DB_HOST = os.getenv("DB_NEON_HOST")
+# DB_PORT = os.getenv("DB_NEON_PORT", "5432")
+# DB_NAME = os.getenv("DB_NEON_NAME")
+# DB_USER = os.getenv("DB_NEON_USER")
+# DB_PASSWORD = os.getenv("DB_NEON_PASSWORD")
 
-# DB_HOST = os.getenv("DB_POSTGRES_HOST")
-# DB_PORT = os.getenv("DB_POSTGRES_PORT", "5432")
-# DB_NAME = os.getenv("DB_POSTGRES_DATABASE")
-# DB_USER = os.getenv("DB_POSTGRES_USER")
-# DB_PASSWORD = os.getenv("DB_POSTGRES_PASSWORD")
+DB_HOST = os.getenv("DB_POSTGRES_HOST")
+DB_PORT = os.getenv("DB_POSTGRES_PORT", "5432")
+DB_NAME = os.getenv("DB_POSTGRES_DATABASE")
+DB_USER = os.getenv("DB_POSTGRES_USER")
+DB_PASSWORD = os.getenv("DB_POSTGRES_PASSWORD")
 
 # Create an SQLAlchemy engine
 DATABASE_URL = f"postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
-engine = create_engine(DATABASE_URL)
+# engine = create_engine(DATABASE_URL)
 
-def load_data_from_neon(query):
-    """Fetch data from PostgreSQL Neon into a Pandas DataFrame."""
-    with engine.connect() as connection:
-        return pd.read_sql(text(query), connection)  # ✅ Use `text(query)` for SQLAlchemy 2.x compatibility
+# def load_data_from_neon(query):
+#     """Fetch data from PostgreSQL Neon into a Pandas DataFrame."""
+#     with engine.connect() as connection:
+#         return pd.read_sql(text(query), connection)  # ✅ Use `text(query)` for SQLAlchemy 2.x compatibility
 
 # ✅ Load data from PostgreSQL
-tripadvisor_reviews_sentiment = load_data_from_neon("SELECT * FROM is_project.review_sentiment;")
-attractions_tags_cluster = load_data_from_neon("SELECT * FROM is_project.tripadvisor_attractions_cluster;")
-tat_attractions = load_data_from_neon("SELECT * FROM is_project.tat_attractions;")
-
-# tripadvisor_reviews_sentiment = pd.read_parquet('test/prediction/SVM_TH_Prediction.parquet')
-# attractions_tags_cluster = pd.read_parquet('app/clustering_experiment/output/cosine_clusters.parquet')
-# tat_attractions = pd.read_csv('app/frontend/tat_attractions.csv')
+# tripadvisor_reviews_sentiment = load_data_from_neon("SELECT * FROM is_project.review_sentiment;")
+# attractions_tags_cluster = load_data_from_neon("SELECT * FROM is_project.tripadvisor_attractions_cluster;")
+# tat_attractions = load_data_from_neon("SELECT * FROM is_project.tat_attractions;")
+DATASET_DIR = './app/frontend/data'
+tripadvisor_reviews_sentiment = pd.read_parquet(f'{DATASET_DIR}/sentiment_prediction.parquet')
+attractions_tags_cluster = pd.read_parquet(f'{DATASET_DIR}/cosine_clusters.parquet')
+tat_attractions = pd.read_parquet(f'{DATASET_DIR}/merged_tat_attractions.parquet')
 
 if tripadvisor_reviews_sentiment.empty or attractions_tags_cluster.empty or tat_attractions.empty:
     raise ValueError("❌ One or more required tables are empty. Please check your database.")
@@ -177,7 +177,7 @@ def semantic_clustering(input_text):
             "place_id": place_id,
             "location_id": location_id,
             "similarity_score": similarity_score,
-            "Attraction Name": place_name,
+            "attraction_name": place_name,
             "most_similar_name_and_introduction": merged_content
         })
 

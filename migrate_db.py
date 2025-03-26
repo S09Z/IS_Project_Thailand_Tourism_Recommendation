@@ -3,6 +3,7 @@ import psycopg2
 import os
 from dotenv import load_dotenv
 from tqdm import tqdm 
+from typing import List
 
 # ✅ Load environment variables from .env
 load_dotenv()
@@ -415,6 +416,171 @@ def drop_schemas_with_cascade(schema_names):
         cursor.close()
         conn.close()
 
+def load_and_prepare_review_data(parquet_files: List[str]) -> pd.DataFrame:
+    """
+    Load and merge review data from multiple .parquet files, 
+    then extract and return the relevant columns as a new DataFrame.
+    """
+    all_dataframes = []
+
+    for file_path in parquet_files:
+        try:
+            df = pd.read_parquet(file_path)
+            all_dataframes.append(df)
+            print(f"✅ Loaded: {file_path} ({len(df)} rows)")
+        except Exception as e:
+            print(f"❌ Failed to load {file_path}: {e}")
+
+    if not all_dataframes:
+        raise ValueError("❌ No valid .parquet files loaded.")
+
+    # ✅ Merge all DataFrames
+    merged_df = pd.concat(all_dataframes, ignore_index=True)
+
+    # ✅ Extract relevant columns
+    required_columns = [
+        "place_id",
+        "location_id",
+        "review_text",
+        "actual_sentiment",
+        "predicted_sentiment",
+        "language",
+        "review_id",
+    ]
+
+    missing_cols = [col for col in required_columns if col not in merged_df.columns]
+    if missing_cols:
+        raise ValueError(f"❌ Missing required columns: {missing_cols}")
+
+    clean_df = merged_df[required_columns].copy()
+    print(f"📦 Final merged DataFrame shape: {clean_df.shape}")
+
+    return clean_df
+
+def prepare_tripadvisor_details(csv_files: List[str]) -> pd.DataFrame:
+    """Load and merge Tripadvisor details data from CSV files, clean numerics."""
+    all_dfs = []
+    for file in csv_files:
+        try:
+            df = pd.read_csv(file)
+            all_dfs.append(df)
+            print(f"✅ Loaded: {file} ({len(df)} rows)")
+        except Exception as e:
+            print(f"❌ Failed to load {file}: {e}")
+
+    if not all_dfs:
+        raise ValueError("❌ No valid CSV files loaded.")
+
+    merged_df = pd.concat(all_dfs, ignore_index=True)
+
+    numeric_columns = [
+        "location_id", "latitude", "longitude", "rating", "num_reviews",
+        "ranking_geo_location_id", "ranking_out_of", "ranking_no",
+        "rating_1_review_count", "rating_2_review_count", "rating_3_review_count",
+        "rating_4_review_count", "rating_5_review_count", "trip_types_solo",
+        "trip_types_couples", "trip_types_business", "trip_types_family",
+        "trip_types_friends"
+    ]
+
+    for col in numeric_columns:
+        if col in merged_df.columns:
+            merged_df[col] = pd.to_numeric(merged_df[col], errors="coerce")
+
+    int_columns = [
+        "location_id", "num_reviews", "ranking_geo_location_id", "ranking_out_of", "ranking_no",
+        "rating_1_review_count", "rating_2_review_count", "rating_3_review_count",
+        "rating_4_review_count", "rating_5_review_count", "trip_types_solo",
+        "trip_types_couples", "trip_types_business", "trip_types_family", "trip_types_friends"
+    ]
+
+    for col in int_columns:
+        if col in merged_df.columns:
+            merged_df[col] = merged_df[col].apply(lambda x: int(x) if pd.notna(x) else None)
+
+    merged_df = merged_df.where(pd.notna(merged_df), None)
+
+    required_columns = [
+        "location_id", "name", "description", "web_url", "latitude", "longitude", "website",
+        "write_review", "rating", "rating_image_url", "num_reviews", "ranking_geo_location_id",
+        "ranking_string", "geo_location_name", "ranking_out_of", "ranking_no",
+        "rating_1_review_count", "rating_2_review_count", "rating_3_review_count",
+        "rating_4_review_count", "rating_5_review_count", "tags", "trip_types_solo",
+        "trip_types_couples", "trip_types_business", "trip_types_family", "trip_types_friends"
+    ]
+
+    merged_df = merged_df[required_columns].copy()
+
+    return merged_df
+
+def prepare_tripadvisor_cluster(csv_files: List[str]) -> pd.DataFrame:
+    """Load and merge Tripadvisor cluster data from CSV files."""
+    all_dfs = []
+    for file in csv_files:
+        try:
+            df = pd.read_csv(file)
+            all_dfs.append(df)
+            print(f"✅ Loaded: {file} ({len(df)} rows)")
+        except Exception as e:
+            print(f"❌ Failed to load {file}: {e}")
+
+    if not all_dfs:
+        raise ValueError("❌ No valid CSV files loaded.")
+
+    merged_df = pd.concat(all_dfs, ignore_index=True)
+
+    required_columns = [
+        "location_id", "name", "description", "web_url", "latitude", "longitude", "website",
+        "write_review", "rating", "rating_image_url", "num_reviews", "ranking_geo_location_id",
+        "ranking_string", "geo_location_name", "ranking_out_of", "ranking_no",
+        "rating_1_review_count", "rating_2_review_count", "rating_3_review_count",
+        "rating_4_review_count", "rating_5_review_count", "tags", "trip_types_solo",
+        "trip_types_couples", "trip_types_business", "trip_types_family",
+        "trip_types_friends", "cleaned_tags", "tag_embeddings", "cluster"
+    ]
+
+    merged_df = merged_df[required_columns].copy()
+
+    return merged_df
+
+import pandas as pd
+from typing import List
+
+def prepare_tat_attractions(csv_files: List[str]) -> pd.DataFrame:
+    """Load and merge data from multiple TAT CSV files and extract required columns."""
+    all_dfs = []
+    for file in csv_files:
+        try:
+            df = pd.read_csv(file)
+            all_dfs.append(df)
+            print(f"✅ Loaded: {file} ({len(df)} rows)")
+        except Exception as e:
+            print(f"❌ Failed to load {file}: {e}")
+
+    if not all_dfs:
+        raise ValueError("❌ No valid CSV files loaded.")
+
+    merged_df = pd.concat(all_dfs, ignore_index=True)
+
+    required_columns = [
+        "placeId", "place_name_th", "introduction_th", "category_name", "categoryId",
+        "latitude", "longitude", "postcode", "thumbnail_url", "tags", "province_Id",
+        "province_name_th", "district_Id", "district_name_th", "sub_district_Id",
+        "sub_district_name_th", "updated_at", "introduction_en", "place_name_en",
+        "province_name_en", "district_name_en", "sub_district_name_en"
+    ]
+
+    merged_df = merged_df[required_columns].copy()
+    merged_df.columns = [  # Optional: standardize column names to match DB if needed
+        "place_id", "place_name_th", "introduction_th", "category_name", "category_id",
+        "latitude", "longitude", "postcode", "thumbnail_url", "tags", "province_id",
+        "province_name_th", "district_id", "district_name_th", "sub_district_id",
+        "sub_district_name_th", "updated_at", "introduction_en", "place_name_en",
+        "province_name_en", "district_name_en", "sub_district_name_en"
+    ]
+
+    return merged_df
+
+
 if __name__ == "__main__":
     # tables_to_drop = ["tripadvisor_attractions_details"]
     # drop_tables_with_cascade(tables_to_drop)
@@ -434,9 +600,22 @@ if __name__ == "__main__":
     # df.to_parquet("./test/prediction/SVM_EN_Prediction.parquet")
 
     # ✅ Import CSV files
-    import_review_sentiment("./test/prediction/SVM_EN_Prediction.parquet")
+    # import_review_sentiment("./test/prediction/SVM_EN_Prediction.parquet")
     # import_tripadvisor_attractions_cluster("./app/clustering_experiment/input/tag_embeddings.csv")
     # import_tat_attractions("./app/frontend/merged_tat_attractions.csv")  
     # import_tripadvisor_attractions_details("./app/frontend/data/combined_details.csv")
+    
+    # ✅ Merge CSV files
+    merged_df = prepare_tat_attractions(["./app/frontend/merged_tat_attractions.csv"])
+    merged_df.to_parquet("./app/frontend/data/merged_tat_attractions.parquet", index=False, compression="zstd", engine="pyarrow")
+    
+    merged_df = prepare_tripadvisor_details(["./app/frontend/data/combined_details.csv"])
+    merged_df.to_parquet("./app/frontend/data/combined_details.parquet", index=False, compression="zstd", engine="pyarrow")
+    
+    # merged_df = prepare_tripadvisor_cluster(["./app/clustering_experiment/output/cosine_clusters.csv"])
+    # merged_df.to_parquet("./app/frontend/data/tripadvisor_attractions_cluster.parquet", index=False, compression="zstd", engine="pyarrow")
+    
+    # merged_df = load_and_prepare_review_data(["./test/prediction/SVM_EN_Prediction.parquet", "./test/prediction/SVM_TH_Prediction.parquet"])
+    # merged_df.to_parquet("./app/frontend/data/sentiment_prediction.parquet", index=False, compression="zstd", engine="pyarrow")
 
     print("🎉 All CSV data imported successfully!")
