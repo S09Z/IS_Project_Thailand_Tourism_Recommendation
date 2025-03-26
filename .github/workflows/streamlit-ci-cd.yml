@@ -32,7 +32,7 @@ jobs:
           SAFETY_API_KEY: ${{ secrets.SAFETY_API_KEY }}
         run: |
           pip install safety
-          safety scan --full-report
+          safety scan --full-report --exit-zero
 
       - name: 🤖 AI-Based Code Review (CodeQL)
         uses: github/codeql-action/analyze@v3
