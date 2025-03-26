@@ -3,7 +3,7 @@ import os
 import math
 
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
-import ranking_evaluation as eval
+# import ranking_evaluation as eval
 from content_filtering import semantic_clustering
 
 import re
@@ -36,12 +36,12 @@ def update_selection():
     # 🔹 ถ้าผู้ใช้ "uncheck" ค่า ให้เซ็ตเป็นค่าที่เลือกไว้ล่าสุด
     if not selected_name and st.session_state.selected_places:
         st.session_state.segmented_control = next(
-            (k for k, v in st.session_state.attraction_options.items() if v == st.session_state.selected_places["Attraction Name"]), None
+            (k for k, v in st.session_state.attraction_options.items() if v == st.session_state.selected_places["attraction_name"]), None
         )
         return
 
     # 🔹 ค้นหาข้อมูลของสถานที่ที่เลือก
-    selected_obj = next((item for item in st.session_state.attraction_data if item["Attraction Name"] == selected_name), None)
+    selected_obj = next((item for item in st.session_state.attraction_data if item["attraction_name"] == selected_name), None)
     if selected_obj:
         st.session_state.selected_places = selected_obj  # ✅ เก็บเป็น Object
     else:
@@ -72,20 +72,20 @@ def filter_text_by_language(text, language):
     
     return " ".join(filtered_words) 
 
-def check_database_connection():
-    """Check if the database connection is successful."""
-    try:
-        with engine.connect() as connection:
-            connection.execute(text("SELECT 1"))  # Simple test query
-        return True
-    except Exception as e:
-        st.error(f"❌ Database connection failed: {e}")
-        return False
+# def check_database_connection():
+#     """Check if the database connection is successful."""
+#     try:
+#         with engine.connect() as connection:
+#             connection.execute(text("SELECT 1"))  # Simple test query
+#         return True
+#     except Exception as e:
+#         st.error(f"❌ Database connection failed: {e}")
+#         return False
     
-def load_data_from_neon(query):
-    """Fetch data from PostgreSQL Neon into a Pandas DataFrame."""
-    with engine.connect() as connection:
-        return pd.read_sql(text(query), connection)  # ✅ Use `text(query)` for SQLAlchemy 2.x compatibility
+# def load_data_from_neon(query):
+#     """Fetch data from PostgreSQL Neon into a Pandas DataFrame."""
+#     with engine.connect() as connection:
+#         return pd.read_sql(text(query), connection)  # ✅ Use `text(query)` for SQLAlchemy 2.x compatibility
     
 def filter_locations_within_distance(cluster_df, matching_place_cluster, distance_km):
     """Filter cluster_df locations within distance_km from the center (matching_place_cluster)."""
@@ -119,21 +119,21 @@ ICON_HOME = "https://img.icons8.com/fluency/48/home.png"  # Home icon
 ICON_DATA = "https://img.icons8.com/fluency/48/table.png"  # Data icon
 APP_LOGO = "https://img.icons8.com/fluency/48/sun.png"  # App logoload_dotenv()
 
-DB_HOST = os.getenv("DB_NEON_HOST")
-DB_PORT = os.getenv("DB_NEON_PORT", "5432")
-DB_NAME = os.getenv("DB_NEON_NAME")
-DB_USER = os.getenv("DB_NEON_USER")
-DB_PASSWORD = os.getenv("DB_NEON_PASSWORD")
+DB_HOST = os.getenv("DB_POSTGRES_HOST")
+DB_PORT = os.getenv("DB_POSTGRES_PORT", "5432")
+DB_NAME = os.getenv("DB_POSTGRES_DATABASE")
+DB_USER = os.getenv("DB_POSTGRES_USER")
+DB_PASSWORD = os.getenv("DB_POSTGRES_PASSWORD")
 
 # Create an SQLAlchemy engine
 DATABASE_URL = f"postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
-engine = create_engine(DATABASE_URL)
+# engine = create_engine(DATABASE_URL)
 
 # ✅ Run the connection check before loading the app
-if check_database_connection():
-    st.success("✅ Connected to the database successfully!")
-else:
-    st.stop()
+# if check_database_connection():
+#     st.success("✅ Connected to the database successfully!")
+# else:
+#     st.stop()
 
 # Custom Logo and Title in Sidebar
 st.sidebar.markdown(
@@ -155,10 +155,11 @@ if st.sidebar.button(f"📊   Data", use_container_width=False, type="tertiary")
     menu_choice = "Data"
 
 # ✅ Load data from PostgreSQL
-tripadvisor_reviews_sentiment = load_data_from_neon("SELECT * FROM is_project.review_sentiment;")
-attractions_tags_cluster = load_data_from_neon("SELECT * FROM is_project.tripadvisor_attractions_cluster;")
-tat_attractions = load_data_from_neon("SELECT * FROM is_project.tat_attractions;")
-tripadvisor_attractions_details = load_data_from_neon("SELECT * FROM is_project.tripadvisor_attractions_details;")
+DATASET_DIR = './app/frontend/data'
+tripadvisor_reviews_sentiment = pd.read_parquet(f'{DATASET_DIR}/sentiment_prediction.parquet')
+attractions_tags_cluster = pd.read_parquet(f'{DATASET_DIR}/cosine_clusters.parquet')
+tat_attractions = pd.read_parquet(f'{DATASET_DIR}/merged_tat_attractions.parquet')
+tripadvisor_attractions_details = pd.read_parquet(f'{DATASET_DIR}/combined_details.parquet')
 
 # merged_tat_attractions_df = pd.read_csv('./merged_tat_attractions.csv')
 # tripadvisor_attractions_details = pd.read_csv('./data/combined_details.csv')
@@ -314,7 +315,7 @@ elif menu_choice == "Home":
             print(result)
             st.session_state.attraction_data = result  # ✅ เก็บข้อมูลเต็มไว้ใน session_state
             st.session_state.attraction_options = {
-                f"{item['Attraction Name']} (Score: {math.floor(item['similarity_Score'] * 100000) / 100000})": item["Attraction Name"]
+                f"{item['attraction_name']} (Score: {math.floor(item['similarity_score'] * 100000) / 100000})": item["attraction_name"]
                 for item in result
             }
             st.session_state.selected_places = {} 
@@ -344,15 +345,15 @@ if st.session_state.attraction_options:
 
     # ✅ แสดงผลค่าที่เลือก (เป็น Object)
     if isinstance(st.session_state.selected_places, dict) and st.session_state.selected_places:
-        # st.write(f"🔹 คุณเลือก: {st.session_state.selected_places.get('Attraction Name', 'N/A')}")
+        # st.write(f"🔹 คุณเลือก: {st.session_state.selected_places.get('attraction_name', 'N/A')}")
         # st.json(st.session_state.selected_places) 
         
         result = st.session_state.selected_places
         
         st.write("##### ข้อมูลสถานที่ท่องเที่ยวที่เลือก:")
         st.write(f"**TAT Place ID:** {result['place_id']}")
-        st.write(f"**Similarity Score:** {result['similarity_Score']}")
-        st.write(f"**Attraction Name:** {result['Attraction Name']}")
+        st.write(f"**Similarity Score:** {result['similarity_score']}")
+        st.write(f"**attraction_name:** {result['attraction_name']}")
         st.write(f"**Most Similar Name & Introduction:** {result['most_similar_name_and_introduction']}")
         
         matching_place_cluster = None
