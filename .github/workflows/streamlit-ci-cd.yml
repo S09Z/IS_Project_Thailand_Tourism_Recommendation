@@ -28,7 +28,9 @@ jobs:
           path: ./
 
       - name: 📦 Run Dependency Security Scan (Safety)
-        run: pip install safety && safety check --full-report
+        run: |
+          pip install safety
+          safety scan --full-report
 
       - name: 🤖 AI-Based Code Review (CodeQL)
         uses: github/codeql-action/analyze@v3
