@@ -11,15 +11,13 @@ import emoji
 import numpy as np
 from sqlalchemy import create_engine, text
 from geopy.distance import geodesic
+import streamlit as st
+import pandas as pd
+import pydeck as pdk
 
 # Ensure the current directory is in sys.path
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-import streamlit as st
-import pandas as pd
-import pydeck as pdk
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.metrics.pairwise import cosine_similarity
 
 if "selected_places" not in st.session_state:
     st.session_state.selected_places = {}  
@@ -155,7 +153,7 @@ if st.sidebar.button(f"📊   Data", use_container_width=False, type="tertiary")
     menu_choice = "Data"
 
 # ✅ Load data from PostgreSQL
-DATASET_DIR = './app/frontend/data'
+DATASET_DIR = './data'
 tripadvisor_reviews_sentiment = pd.read_parquet(f'{DATASET_DIR}/sentiment_prediction.parquet')
 attractions_tags_cluster = pd.read_parquet(f'{DATASET_DIR}/cosine_clusters.parquet')
 tat_attractions = pd.read_parquet(f'{DATASET_DIR}/merged_tat_attractions.parquet')
