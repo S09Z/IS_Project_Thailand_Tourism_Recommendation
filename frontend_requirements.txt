@@ -1,0 +1,17 @@
+streamlit==1.42.2
+pandas
+numpy
+plotly
+scikit-learn
+streamlit==1.42.2
+pandas==2.2.0
+numpy==1.26.4
+plotly==6.0.0
+scikit-learn==1.6.1
+attacut==1.0.6
+pythainlp==5.0.5
+sqlalchemy==2.0.25 
+python-dotenv==1.0.1 
+gensim==4.3.3
+emoji==2.14.1 
+geopy==2.4.1

@@ -1,5 +1,47 @@
+# Byte-compiled / cache
 __pycache__/
-*.pyc
-*.pyo
-*.pyd
+*.py[cod]
+*.so
+
+# Virtual environments
+.venv/
+env/
 venv/
+
+# Streamlit & Python logs
+*.log
+*.db
+*.sqlite3
+
+# Notebooks / data
+*.ipynb
+*.csv
+*.tsv
+*.parquet
+
+# Git & IDE config
+.git/
+.gitignore
+.vscode/
+.idea/
+
+# Pretrained & large models
+pretained_or_finetune-models/
+models/
+datasets/
+data/
+hooks/
+test/
+tests/
+logs/
+
+# nltk and model caches
+nltk_data/
+app/nltk_data/
+
+# Ignore Dockerfile in subpaths (if any)
+Dockerfile
+
+app/frontend/*.csv
+app/frontend/*.parquet
+app/frontend/data/*.csv
