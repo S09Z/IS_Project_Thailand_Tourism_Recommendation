@@ -4,18 +4,21 @@
 PROJECT_ID="murpheys09-sandboxs"
 SERVICE_NAME="my-streamlit-service"
 REGION="asia-southeast1"
-IMAGE="gcr.io/$PROJECT_ID/my-streamlit-app"
-
-echo "🔨 Building Docker image..."
-docker build -f app/frontend/Dockerfile -t $IMAGE .
+IMAGE="gcr.io/$PROJECT_ID/my-streamlit-app" 
 
 echo "🚀 Pushing image to GCR..."
-docker push $IMAGE
+gcloud builds submit --config=cloudbuild.yaml
 
 echo "🌐 Deploying to Cloud Run..."
 gcloud run deploy $SERVICE_NAME \
   --image $IMAGE \
-  --platform managed \
   --region $REGION \
   --allow-unauthenticated \
-  --timeout 300s 
+  --memory=2Gi \
+  --cpu=2 \
+  --timeout=300s
+
+echo "🌐 Publish URL"
+gcloud run services describe my-streamlit-service \
+  --platform managed --region $REGION \
+  --format 'value(status.url)'

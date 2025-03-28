@@ -4,7 +4,6 @@ import math
 
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 # import ranking_evaluation as eval
-from content_filtering import semantic_clustering
 
 import re
 import emoji
@@ -18,6 +17,67 @@ import pydeck as pdk
 # Ensure the current directory is in sys.path
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+# DATASET_DIR = os.path.join(BASE_DIR, "inputs")
+DATASET_DIR = os.path.dirname(os.path.abspath(__file__))
+
+
+required_files = [
+    "sentiment_prediction.parquet",
+    "combined_details.parquet",
+    "cosine_clusters.parquet",
+    "merged_tat_attractions.parquet"
+]
+
+# 🔍 Debug path
+cwd = os.getcwd()
+print(f"[DEBUG] Current Working Directory: {cwd}")
+st.write(f"📂 Current Working Directory: `{cwd}`")
+
+# 🔍 List files in root
+root_files = os.listdir("/app")
+print(f"[DEBUG] Files in /app: {root_files}")
+st.write("📁 Files in `/app`:")
+st.code("\n".join(root_files), language="bash")
+
+# 🔍 List files in root
+root_inputs_files = os.listdir("/app/inputs")
+print(f"[DEBUG] Files in /app/inputs: {root_inputs_files}")
+st.write("📁 Files in `/app/inputs`:")
+st.code("\n".join(root_inputs_files), language="bash")
+
+# 🚨 Check if dataset folder exists
+if not os.path.exists(DATASET_DIR):
+    print(f"[ERROR] Dataset directory not found: {DATASET_DIR}")
+    st.error(f"❌ Dataset directory not found: {DATASET_DIR}")
+    st.stop()
+
+# ✅ Check required files in dataset folder
+missing_files = []
+for filename in required_files:
+    file_path = os.path.join(DATASET_DIR, filename)
+    if not os.path.exists(file_path):
+        print(f"[MISSING] {filename} is missing.")
+        missing_files.append(filename)
+
+if missing_files:
+    st.error(f"❌ Missing required dataset files: {', '.join(missing_files)}")
+
+    if os.path.exists(DATASET_DIR):
+        dataset_files = os.listdir(DATASET_DIR)
+        print(f"[DEBUG] Files in {DATASET_DIR}: {dataset_files}")
+        st.write(f"📁 Files in `{DATASET_DIR}`:")
+        st.code("\n".join(dataset_files), language="bash")
+
+    st.stop()
+
+# โหลดไฟล์เมื่อทุกไฟล์มีอยู่
+tripadvisor_reviews_sentiment = pd.read_parquet(os.path.join(DATASET_DIR, "sentiment_prediction.parquet"))
+tripadvisor_attractions_details = pd.read_parquet(os.path.join(DATASET_DIR, "combined_details.parquet"))
+attractions_tags_cluster = pd.read_parquet(os.path.join(DATASET_DIR, "cosine_clusters.parquet"))
+tat_attractions = pd.read_parquet(os.path.join(DATASET_DIR, "merged_tat_attractions.parquet"))
+
+from content_filtering import semantic_clustering
 
 if "selected_places" not in st.session_state:
     st.session_state.selected_places = {}  
@@ -152,17 +212,6 @@ if st.sidebar.button(f"🏠   Home", use_container_width=False, type="tertiary")
 if st.sidebar.button(f"📊   Data", use_container_width=False, type="tertiary"):
     menu_choice = "Data"
 
-# ✅ Load data from PostgreSQL
-DATASET_DIR = './data'
-tripadvisor_reviews_sentiment = pd.read_parquet(f'{DATASET_DIR}/sentiment_prediction.parquet')
-attractions_tags_cluster = pd.read_parquet(f'{DATASET_DIR}/cosine_clusters.parquet')
-tat_attractions = pd.read_parquet(f'{DATASET_DIR}/merged_tat_attractions.parquet')
-tripadvisor_attractions_details = pd.read_parquet(f'{DATASET_DIR}/combined_details.parquet')
-
-# merged_tat_attractions_df = pd.read_csv('./merged_tat_attractions.csv')
-# tripadvisor_attractions_details = pd.read_csv('./data/combined_details.csv')
-# tripadvisor_reviews_sentiment = pd.read_csv('./../../test/prediction/SVN_Prediction.csv', encoding='utf-8').reset_index(drop=True)
-# attractions_tags_cluster = pd.read_csv("./clustering_experiment/input/tag_embeddings.csv")
 
 if menu_choice == "Data":
     st.title("Data Table")

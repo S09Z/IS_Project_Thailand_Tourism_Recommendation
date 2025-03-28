@@ -40,10 +40,39 @@ DATABASE_URL = f"postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NA
 # tripadvisor_reviews_sentiment = load_data_from_neon("SELECT * FROM is_project.review_sentiment;")
 # attractions_tags_cluster = load_data_from_neon("SELECT * FROM is_project.tripadvisor_attractions_cluster;")
 # tat_attractions = load_data_from_neon("SELECT * FROM is_project.tat_attractions;")
-DATASET_DIR = './data'
-tripadvisor_reviews_sentiment = pd.read_parquet(f'{DATASET_DIR}/sentiment_prediction.parquet')
-attractions_tags_cluster = pd.read_parquet(f'{DATASET_DIR}/cosine_clusters.parquet')
-tat_attractions = pd.read_parquet(f'{DATASET_DIR}/merged_tat_attractions.parquet')
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+# DATASET_DIR = os.path.join(BASE_DIR, "inputs")
+DATASET_DIR = os.path.dirname(os.path.abspath(__file__))
+
+required_files = [
+    "sentiment_prediction.parquet",
+    "combined_details.parquet",
+    "cosine_clusters.parquet",
+    "merged_tat_attractions.parquet"
+]
+
+print(f"[INFO] BASE_DIR: {BASE_DIR}")
+print(f"[INFO] Checking dataset directory: {DATASET_DIR}")
+
+if not os.path.exists(DATASET_DIR):
+    print(f"[ERROR] Dataset folder not found: {DATASET_DIR}")
+    print(f"[DEBUG] Current working dir: {os.getcwd()}")
+    print(f"[DEBUG] Files at BASE_DIR: {os.listdir(BASE_DIR)}")
+    raise FileNotFoundError(f"Dataset directory not found: {DATASET_DIR}")
+
+all_files = os.listdir(DATASET_DIR)
+print(f"[INFO] Files in inputs/: {all_files}")
+
+missing_files = [f for f in required_files if not os.path.exists(os.path.join(DATASET_DIR, f))]
+if missing_files:
+    print(f"[ERROR] Missing required files: {missing_files}")
+    raise FileNotFoundError(f"Missing required dataset files: {missing_files}")
+
+# ✅ Load datasets
+tripadvisor_reviews_sentiment = pd.read_parquet(os.path.join(DATASET_DIR, "sentiment_prediction.parquet"))
+tripadvisor_attractions_details = pd.read_parquet(os.path.join(DATASET_DIR, "combined_details.parquet"))
+attractions_tags_cluster = pd.read_parquet(os.path.join(DATASET_DIR, "cosine_clusters.parquet"))
+tat_attractions = pd.read_parquet(os.path.join(DATASET_DIR, "merged_tat_attractions.parquet"))
 
 if tripadvisor_reviews_sentiment.empty or attractions_tags_cluster.empty or tat_attractions.empty:
     raise ValueError("❌ One or more required tables are empty. Please check your database.")
