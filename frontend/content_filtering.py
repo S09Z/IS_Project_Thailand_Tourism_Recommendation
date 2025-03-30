@@ -10,7 +10,7 @@ from sklearn.preprocessing import normalize
 from sqlalchemy import create_engine, text
 from dotenv import load_dotenv
 from gensim.models import FastText
-
+import gcsfs
 
 # Load environment variables
 load_dotenv()
@@ -21,59 +21,26 @@ load_dotenv()
 # DB_USER = os.getenv("DB_NEON_USER")
 # DB_PASSWORD = os.getenv("DB_NEON_PASSWORD")
 
-DB_HOST = os.getenv("DB_POSTGRES_HOST")
-DB_PORT = os.getenv("DB_POSTGRES_PORT", "5432")
-DB_NAME = os.getenv("DB_POSTGRES_DATABASE")
-DB_USER = os.getenv("DB_POSTGRES_USER")
-DB_PASSWORD = os.getenv("DB_POSTGRES_PASSWORD")
+# DB_HOST = os.getenv("DB_POSTGRES_HOST")
+# DB_PORT = os.getenv("DB_POSTGRES_PORT", "5432")
+# DB_NAME = os.getenv("DB_POSTGRES_DATABASE")
+# DB_USER = os.getenv("DB_POSTGRES_USER")
+# DB_PASSWORD = os.getenv("DB_POSTGRES_PASSWORD")
 
-# Create an SQLAlchemy engine
-DATABASE_URL = f"postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
-# engine = create_engine(DATABASE_URL)
-
-# def load_data_from_neon(query):
-#     """Fetch data from PostgreSQL Neon into a Pandas DataFrame."""
-#     with engine.connect() as connection:
-#         return pd.read_sql(text(query), connection)  # ✅ Use `text(query)` for SQLAlchemy 2.x compatibility
-
-# ✅ Load data from PostgreSQL
-# tripadvisor_reviews_sentiment = load_data_from_neon("SELECT * FROM is_project.review_sentiment;")
-# attractions_tags_cluster = load_data_from_neon("SELECT * FROM is_project.tripadvisor_attractions_cluster;")
-# tat_attractions = load_data_from_neon("SELECT * FROM is_project.tat_attractions;")
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-# DATASET_DIR = os.path.join(BASE_DIR, "inputs")
-DATASET_DIR = os.path.dirname(os.path.abspath(__file__))
+DATASET_DIR = os.path.join(BASE_DIR, "inputs")
 
-required_files = [
-    "sentiment_prediction.parquet",
-    "combined_details.parquet",
-    "cosine_clusters.parquet",
-    "merged_tat_attractions.parquet"
-]
 
-print(f"[INFO] BASE_DIR: {BASE_DIR}")
-print(f"[INFO] Checking dataset directory: {DATASET_DIR}")
+def load_data_from_gcs(filename: str):
+    fs = gcsfs.GCSFileSystem()
+    with fs.open(f"my-streamlit-data/inputs/{filename}", 'rb') as f:
+        return pd.read_parquet(f, engine="pyarrow")
 
-if not os.path.exists(DATASET_DIR):
-    print(f"[ERROR] Dataset folder not found: {DATASET_DIR}")
-    print(f"[DEBUG] Current working dir: {os.getcwd()}")
-    print(f"[DEBUG] Files at BASE_DIR: {os.listdir(BASE_DIR)}")
-    raise FileNotFoundError(f"Dataset directory not found: {DATASET_DIR}")
-
-all_files = os.listdir(DATASET_DIR)
-print(f"[INFO] Files in inputs/: {all_files}")
-
-missing_files = [f for f in required_files if not os.path.exists(os.path.join(DATASET_DIR, f))]
-if missing_files:
-    print(f"[ERROR] Missing required files: {missing_files}")
-    raise FileNotFoundError(f"Missing required dataset files: {missing_files}")
-
-# ✅ Load datasets
-tripadvisor_reviews_sentiment = pd.read_parquet(os.path.join(DATASET_DIR, "sentiment_prediction.parquet"))
-tripadvisor_attractions_details = pd.read_parquet(os.path.join(DATASET_DIR, "combined_details.parquet"))
-attractions_tags_cluster = pd.read_parquet(os.path.join(DATASET_DIR, "cosine_clusters.parquet"))
-tat_attractions = pd.read_parquet(os.path.join(DATASET_DIR, "merged_tat_attractions.parquet"))
-
+# Example usage
+tripadvisor_reviews_sentiment = load_data_from_gcs("sentiment_prediction.parquet")
+tripadvisor_attractions_details = load_data_from_gcs("combined_details.parquet")
+attractions_tags_cluster = load_data_from_gcs("cosine_clusters.parquet")
+tat_attractions = load_data_from_gcs("merged_tat_attractions.parquet")
 if tripadvisor_reviews_sentiment.empty or attractions_tags_cluster.empty or tat_attractions.empty:
     raise ValueError("❌ One or more required tables are empty. Please check your database.")
 
@@ -177,9 +144,8 @@ def semantic_clustering(input_text):
     # ✅ Compute Cosine Similarity
     similarity_scores = cosine_similarity(input_vector, attraction_vectors)[0]
     
-    # ✅ Boost results containing keyword "น้ำตก"
     for i, name in enumerate(filtered_attractions_df["place_name_th"]):
-        if "น้ำตก" in name:
+        if cleaned_input_text in name:
             similarity_scores[i] *= 1.2  # Boost water-related attractions
 
     # ✅ Get Top 5 Similar Attractions

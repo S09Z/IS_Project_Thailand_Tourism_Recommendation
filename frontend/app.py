@@ -13,71 +13,42 @@ from geopy.distance import geodesic
 import streamlit as st
 import pandas as pd
 import pydeck as pdk
+import gcsfs
+from content_filtering import semantic_clustering
+
+# Set page layout to "wide" (must be the first Streamlit command)
+st.set_page_config(
+    layout="wide",
+    page_title="Thailand Tourism Recommendation", 
+    page_icon="🚀",
+    initial_sidebar_state="collapsed"
+)
+
 
 # Ensure the current directory is in sys.path
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-# DATASET_DIR = os.path.join(BASE_DIR, "inputs")
-DATASET_DIR = os.path.dirname(os.path.abspath(__file__))
+DATASET_DIR = os.path.join(BASE_DIR, "inputs")
+# DATASET_DIR = os.path.dirname(os.path.abspath(__file__))
 
+@st.cache_data
+def load_data_from_gcs(filename: str):
+    fs = gcsfs.GCSFileSystem()
+    with fs.open(f"my-streamlit-data/inputs/{filename}", 'rb') as f:
+        return pd.read_parquet(f, engine="pyarrow")
 
-required_files = [
-    "sentiment_prediction.parquet",
-    "combined_details.parquet",
-    "cosine_clusters.parquet",
-    "merged_tat_attractions.parquet"
-]
-
-# 🔍 Debug path
-cwd = os.getcwd()
-print(f"[DEBUG] Current Working Directory: {cwd}")
-st.write(f"📂 Current Working Directory: `{cwd}`")
-
-# 🔍 List files in root
-root_files = os.listdir("/app")
-print(f"[DEBUG] Files in /app: {root_files}")
-st.write("📁 Files in `/app`:")
-st.code("\n".join(root_files), language="bash")
-
-# 🔍 List files in root
-root_inputs_files = os.listdir("/app/inputs")
-print(f"[DEBUG] Files in /app/inputs: {root_inputs_files}")
-st.write("📁 Files in `/app/inputs`:")
-st.code("\n".join(root_inputs_files), language="bash")
-
-# 🚨 Check if dataset folder exists
-if not os.path.exists(DATASET_DIR):
-    print(f"[ERROR] Dataset directory not found: {DATASET_DIR}")
-    st.error(f"❌ Dataset directory not found: {DATASET_DIR}")
-    st.stop()
-
-# ✅ Check required files in dataset folder
-missing_files = []
-for filename in required_files:
-    file_path = os.path.join(DATASET_DIR, filename)
-    if not os.path.exists(file_path):
-        print(f"[MISSING] {filename} is missing.")
-        missing_files.append(filename)
-
-if missing_files:
-    st.error(f"❌ Missing required dataset files: {', '.join(missing_files)}")
-
-    if os.path.exists(DATASET_DIR):
-        dataset_files = os.listdir(DATASET_DIR)
-        print(f"[DEBUG] Files in {DATASET_DIR}: {dataset_files}")
-        st.write(f"📁 Files in `{DATASET_DIR}`:")
-        st.code("\n".join(dataset_files), language="bash")
-
-    st.stop()
+# Example usage
+tripadvisor_reviews_sentiment = load_data_from_gcs("sentiment_prediction.parquet")
+tripadvisor_attractions_details = load_data_from_gcs("combined_details.parquet")
+attractions_tags_cluster = load_data_from_gcs("cosine_clusters.parquet")
+tat_attractions = load_data_from_gcs("merged_tat_attractions.parquet")
 
 # โหลดไฟล์เมื่อทุกไฟล์มีอยู่
-tripadvisor_reviews_sentiment = pd.read_parquet(os.path.join(DATASET_DIR, "sentiment_prediction.parquet"))
-tripadvisor_attractions_details = pd.read_parquet(os.path.join(DATASET_DIR, "combined_details.parquet"))
-attractions_tags_cluster = pd.read_parquet(os.path.join(DATASET_DIR, "cosine_clusters.parquet"))
-tat_attractions = pd.read_parquet(os.path.join(DATASET_DIR, "merged_tat_attractions.parquet"))
-
-from content_filtering import semantic_clustering
+# tripadvisor_reviews_sentiment = pd.read_parquet(os.path.join(DATASET_DIR, "sentiment_prediction.parquet"))
+# tripadvisor_attractions_details = pd.read_parquet(os.path.join(DATASET_DIR, "combined_details.parquet"))
+# attractions_tags_cluster = pd.read_parquet(os.path.join(DATASET_DIR, "cosine_clusters.parquet"))
+# tat_attractions = pd.read_parquet(os.path.join(DATASET_DIR, "merged_tat_attractions.parquet"))
 
 if "selected_places" not in st.session_state:
     st.session_state.selected_places = {}  
@@ -163,14 +134,6 @@ def filter_locations_within_distance(cluster_df, matching_place_cluster, distanc
     
     return filtered_df
 
-
-# Set page layout to "wide" (must be the first Streamlit command)
-st.set_page_config(
-    layout="wide",
-    page_title="Thailand Tourism Recommendation", 
-    page_icon="🚀",
-    initial_sidebar_state="collapsed"
-)
 
 # Icon URLs (or local paths)
 ICON_HOME = "https://img.icons8.com/fluency/48/home.png"  # Home icon

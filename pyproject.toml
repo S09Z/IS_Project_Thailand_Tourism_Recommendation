@@ -75,6 +75,8 @@ nlpaug = "^1.1.11"
 kneed = "^0.8.5"
 pyldavis = "^3.4.1"
 attacut = "^1.0.6"
+watchdog = "^6.0.0"
+gcsfs = "<2024"
 
 [tool.poetry.group.dev.dependencies]
 ipykernel = "^6.29.5"

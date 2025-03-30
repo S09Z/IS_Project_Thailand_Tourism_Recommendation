@@ -35,5 +35,5 @@ logs/
 nltk_data/
 app/nltk_data/
 
-!app/frontend/inputs/
-!app/frontend/inputs/*.parquet
+frontend/data/
+frontend/inputs/
