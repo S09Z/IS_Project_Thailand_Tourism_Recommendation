@@ -60,6 +60,12 @@
         <mxCell id="HX1HjwHJQsve8ph3F244-24" value="ranking list" style="text;html=1;align=center;verticalAlign=middle;rounded=0;fontFamily=Roboto;fontSource=https%3A%2F%2Ffonts.googleapis.com%2Fcss%3Ffamily%3DRoboto;fontSize=10;" parent="1" vertex="1">
           <mxGeometry x="134" y="550" width="70" height="30" as="geometry" />
         </mxCell>
+        <mxCell id="NQW2yPm_g_XTFBtmkKAe-1" value="&lt;span style=&quot;text-wrap-mode: wrap;&quot;&gt;relevant&lt;br&gt;result&lt;/span&gt;" style="text;html=1;align=center;verticalAlign=middle;rounded=0;fontFamily=Roboto;fontSource=https%3A%2F%2Ffonts.googleapis.com%2Fcss%3Ffamily%3DRoboto;fontSize=10;fontStyle=0" vertex="1" parent="1">
+          <mxGeometry x="230" y="485" width="70" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="NQW2yPm_g_XTFBtmkKAe-2" value="&lt;span style=&quot;text-wrap-mode: wrap;&quot;&gt;Fasttext&lt;br&gt;+&lt;br&gt;Cosine Similarity&lt;/span&gt;" style="text;html=1;align=center;verticalAlign=middle;rounded=0;fontFamily=Roboto;fontSource=https%3A%2F%2Ffonts.googleapis.com%2Fcss%3Ffamily%3DRoboto;fontSize=8;fontStyle=0" vertex="1" parent="1">
+          <mxGeometry x="345" y="465" width="70" height="30" as="geometry" />
+        </mxCell>
       </root>
     </mxGraphModel>
   </diagram>
