@@ -13,7 +13,6 @@ from geopy.distance import geodesic
 import streamlit as st
 import pandas as pd
 import pydeck as pdk
-import gcsfs
 from content_filtering import semantic_clustering
 
 # Set page layout to "wide" (must be the first Streamlit command)
@@ -34,9 +33,8 @@ DATASET_DIR = os.path.join(BASE_DIR, "inputs")
 
 @st.cache_data
 def load_data_from_gcs(filename: str):
-    fs = gcsfs.GCSFileSystem()
-    with fs.open(f"my-streamlit-data/inputs/{filename}", 'rb') as f:
-        return pd.read_parquet(f, engine="pyarrow")
+    url = f"gs://my-streamlit-data/inputs/{filename}"
+    return pd.read_parquet(url, engine="pyarrow")
 
 # Example usage
 tripadvisor_reviews_sentiment = load_data_from_gcs("sentiment_prediction.parquet")

@@ -8692,6 +8692,17 @@ tzdata = {version = "*", markers = "platform_system == \"Windows\""}
 devenv = ["check-manifest", "pytest (>=4.3)", "pytest-cov", "pytest-mock (>=3.3)", "zest.releaser"]
 
 [[package]]
+name = "umap"
+version = "0.1.1"
+description = "UNIST synthesis MAP solution"
+optional = false
+python-versions = "*"
+groups = ["main"]
+files = [
+    {file = "umap-0.1.1.tar.gz", hash = "sha256:5d08c1a335cc7ee175811a99dc9356d3d4b8567ad082e2b1b205198cf27c4256"},
+]
+
+[[package]]
 name = "umap-learn"
 version = "0.5.7"
 description = "Uniform Manifold Approximation and Projection"
@@ -9566,4 +9577,4 @@ recommender = []
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.12,<3.13"
-content-hash = "9a3c00ba7299f33521b42e3912e9be0e20c0ec3a389d063b7d65707e864f9ea9"
+content-hash = "bafb0e32069df1629eb8f512a39b10c54f73ba25f22da3ea2e72c9d2b60304a5"

@@ -10,7 +10,7 @@ from sklearn.preprocessing import normalize
 from sqlalchemy import create_engine, text
 from dotenv import load_dotenv
 from gensim.models import FastText
-import gcsfs
+# import gcsfs
 
 # Load environment variables
 load_dotenv()
@@ -32,9 +32,8 @@ DATASET_DIR = os.path.join(BASE_DIR, "inputs")
 
 
 def load_data_from_gcs(filename: str):
-    fs = gcsfs.GCSFileSystem()
-    with fs.open(f"my-streamlit-data/inputs/{filename}", 'rb') as f:
-        return pd.read_parquet(f, engine="pyarrow")
+    url = f"gs://my-streamlit-data/inputs/{filename}"
+    return pd.read_parquet(url, engine="pyarrow")
 
 # Example usage
 tripadvisor_reviews_sentiment = load_data_from_gcs("sentiment_prediction.parquet")
