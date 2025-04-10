@@ -78,6 +78,8 @@ attacut = "^1.0.6"
 watchdog = "^6.0.0"
 gcsfs = "<2024"
 umap = "^0.1.1"
+optuna = "^4.2.1"
+thundersvm = "^0.3.12"
 
 [tool.poetry.group.dev.dependencies]
 ipykernel = "^6.29.5"
