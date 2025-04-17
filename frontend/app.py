@@ -33,7 +33,8 @@ DATASET_DIR = os.path.join(BASE_DIR, "inputs")
 
 @st.cache_data
 def load_data_from_gcs(filename: str):
-    url = f"gs://my-streamlit-data/inputs/{filename}"
+    # url = f"gs://my-streamlit-data/inputs/{filename}"
+    url = f"{DATASET_DIR}/{filename}"
     return pd.read_parquet(url, engine="pyarrow")
 
 # Example usage
@@ -448,7 +449,7 @@ if st.session_state.attraction_options:
                             filtered_cluster_df = filter_locations_within_distance(cluster_df, matching_place_cluster, distance)
                             cluster_df = filtered_cluster_df
 
-                        ranking_recommendation = cluster_df[['name', 'cluster', 'total_review', 'rating_5_review_count', 'rating_4_review_count', 'sentiment_calc', 'trip_types_solo', 'trip_types_couples', 'trip_types_business', 'trip_types_family', 'trip_types_friends', 'latitude', 'longitude']].head(10)
+                        ranking_recommendation = cluster_df[['name', 'label', 'cluster', 'total_review', 'rating_5_review_count', 'rating_4_review_count', 'sentiment_calc', 'trip_types_solo', 'trip_types_couples', 'trip_types_business', 'trip_types_family', 'trip_types_friends', 'latitude', 'longitude']].head(10)
 
                         st.dataframe(ranking_recommendation.head(10), use_container_width=True) 
 
@@ -459,43 +460,45 @@ if st.session_state.attraction_options:
                                 "Longitude": ranking_recommendation["longitude"],
                                 "Value": np.full(len(ranking_recommendation), fill_value=30)
                             })
-                                                
-                            # Pydeck Layer
+
+                            icon_data = {
+                                "marker": {
+                                    "url": "https://upload.wikimedia.org/wikipedia/commons/e/ec/RedDot.svg",
+                                    "width": 128,
+                                    "height": 128,
+                                    "anchorY": 128
+                                }
+                            }
+
                             layer = pdk.Layer(
-                                "ScatterplotLayer",
+                                type="IconLayer",
                                 data=geoMapCoordinateData,
+                                get_icon="icon_data",
                                 get_position="[Longitude, Latitude]",
-                                get_radius="Value * 1000",  # Adjust size based on Value
-                                get_fill_color="[Value * 2, 100, 150, 128]",  # Set 128 for 50% transparency (RGBA)
+                                get_size=4,
+                                size_scale=15,
                                 pickable=True,
                             )
 
-                            # Pydeck View
                             view = pdk.ViewState(
                                 latitude=13.736717,
                                 longitude=100.523186,
                                 zoom=5,
-                                pitch=50,
+                                pitch=0,
                             )
 
-                            # Pydeck Deck
-                            r = pdk.Deck(
+                            deck = pdk.Deck(
                                 layers=[layer],
                                 initial_view_state=view,
-                                tooltip={"text": "{Province}\nValue: {Value}"},
+                                tooltip={"text": "{Province}"},
                                 map_provider="carto",
                                 map_style="road",
-                                parameters={
-                                    "interactionConfig": {
-                                        "scrollZoom": False,  # ✅ ปิดการซูมด้วย Scroll
-                                        "dragPan": False,    # ✅ ต้องกด `Ctrl` ก่อนถึงจะซูมได้
-                                    }
-                                }
+                                parameters={"iconAtlas": icon_data}
                             )
 
                             # Streamlit app
                             st.write("##### แผนที่แสดงสถานที่ท่องเที่ยวที่แนะนำ")
-                            st.pydeck_chart(r)
+                            st.pydeck_chart(deck)
                             
                             # ✅ ให้ User ให้คะแนนผลลัพธ์แต่ละอัน
                             st.write("🎯 ให้คะแนนผลลัพธ์ที่คุณชอบ (1-10): ")

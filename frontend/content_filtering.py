@@ -32,7 +32,8 @@ DATASET_DIR = os.path.join(BASE_DIR, "inputs")
 
 
 def load_data_from_gcs(filename: str):
-    url = f"gs://my-streamlit-data/inputs/{filename}"
+    # url = f"gs://my-streamlit-data/inputs/{filename}"
+    url = f"{DATASET_DIR}/{filename}"
     return pd.read_parquet(url, engine="pyarrow")
 
 # Example usage
