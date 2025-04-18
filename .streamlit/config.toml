@@ -1,5 +1,0 @@
-[server]
-port = 8080
-enableCORS = false
-headless = true
-address = "0.0.0.0"

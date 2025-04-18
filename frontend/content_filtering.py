@@ -10,7 +10,7 @@ from sklearn.preprocessing import normalize
 from sqlalchemy import create_engine, text
 from dotenv import load_dotenv
 from gensim.models import FastText
-
+# import gcsfs
 
 # Load environment variables
 load_dotenv()
@@ -21,30 +21,26 @@ load_dotenv()
 # DB_USER = os.getenv("DB_NEON_USER")
 # DB_PASSWORD = os.getenv("DB_NEON_PASSWORD")
 
-DB_HOST = os.getenv("DB_POSTGRES_HOST")
-DB_PORT = os.getenv("DB_POSTGRES_PORT", "5432")
-DB_NAME = os.getenv("DB_POSTGRES_DATABASE")
-DB_USER = os.getenv("DB_POSTGRES_USER")
-DB_PASSWORD = os.getenv("DB_POSTGRES_PASSWORD")
+# DB_HOST = os.getenv("DB_POSTGRES_HOST")
+# DB_PORT = os.getenv("DB_POSTGRES_PORT", "5432")
+# DB_NAME = os.getenv("DB_POSTGRES_DATABASE")
+# DB_USER = os.getenv("DB_POSTGRES_USER")
+# DB_PASSWORD = os.getenv("DB_POSTGRES_PASSWORD")
 
-# Create an SQLAlchemy engine
-DATABASE_URL = f"postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
-# engine = create_engine(DATABASE_URL)
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DATASET_DIR = os.path.join(BASE_DIR, "inputs")
 
-# def load_data_from_neon(query):
-#     """Fetch data from PostgreSQL Neon into a Pandas DataFrame."""
-#     with engine.connect() as connection:
-#         return pd.read_sql(text(query), connection)  # ✅ Use `text(query)` for SQLAlchemy 2.x compatibility
 
-# ✅ Load data from PostgreSQL
-# tripadvisor_reviews_sentiment = load_data_from_neon("SELECT * FROM is_project.review_sentiment;")
-# attractions_tags_cluster = load_data_from_neon("SELECT * FROM is_project.tripadvisor_attractions_cluster;")
-# tat_attractions = load_data_from_neon("SELECT * FROM is_project.tat_attractions;")
-DATASET_DIR = './data'
-tripadvisor_reviews_sentiment = pd.read_parquet(f'{DATASET_DIR}/sentiment_prediction.parquet')
-attractions_tags_cluster = pd.read_parquet(f'{DATASET_DIR}/cosine_clusters.parquet')
-tat_attractions = pd.read_parquet(f'{DATASET_DIR}/merged_tat_attractions.parquet')
+def load_data_from_gcs(filename: str):
+    # url = f"gs://my-streamlit-data/inputs/{filename}"
+    url = f"{DATASET_DIR}/{filename}"
+    return pd.read_parquet(url, engine="pyarrow")
 
+# Example usage
+tripadvisor_reviews_sentiment = load_data_from_gcs("sentiment_prediction.parquet")
+tripadvisor_attractions_details = load_data_from_gcs("combined_details.parquet")
+attractions_tags_cluster = load_data_from_gcs("cosine_clusters.parquet")
+tat_attractions = load_data_from_gcs("merged_tat_attractions.parquet")
 if tripadvisor_reviews_sentiment.empty or attractions_tags_cluster.empty or tat_attractions.empty:
     raise ValueError("❌ One or more required tables are empty. Please check your database.")
 
@@ -148,9 +144,8 @@ def semantic_clustering(input_text):
     # ✅ Compute Cosine Similarity
     similarity_scores = cosine_similarity(input_vector, attraction_vectors)[0]
     
-    # ✅ Boost results containing keyword "น้ำตก"
     for i, name in enumerate(filtered_attractions_df["place_name_th"]):
-        if "น้ำตก" in name:
+        if cleaned_input_text in name:
             similarity_scores[i] *= 1.2  # Boost water-related attractions
 
     # ✅ Get Top 5 Similar Attractions

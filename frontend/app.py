@@ -4,7 +4,6 @@ import math
 
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 # import ranking_evaluation as eval
-from content_filtering import semantic_clustering
 
 import re
 import emoji
@@ -14,10 +13,41 @@ from geopy.distance import geodesic
 import streamlit as st
 import pandas as pd
 import pydeck as pdk
+from content_filtering import semantic_clustering
+
+# Set page layout to "wide" (must be the first Streamlit command)
+st.set_page_config(
+    layout="wide",
+    page_title="Thailand Tourism Recommendation", 
+    page_icon="🚀",
+    initial_sidebar_state="collapsed"
+)
+
 
 # Ensure the current directory is in sys.path
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DATASET_DIR = os.path.join(BASE_DIR, "inputs")
+# DATASET_DIR = os.path.dirname(os.path.abspath(__file__))
+
+@st.cache_data
+def load_data_from_gcs(filename: str):
+    # url = f"gs://my-streamlit-data/inputs/{filename}"
+    url = f"{DATASET_DIR}/{filename}"
+    return pd.read_parquet(url, engine="pyarrow")
+
+# Example usage
+tripadvisor_reviews_sentiment = load_data_from_gcs("sentiment_prediction.parquet")
+tripadvisor_attractions_details = load_data_from_gcs("combined_details.parquet")
+attractions_tags_cluster = load_data_from_gcs("cosine_clusters.parquet")
+tat_attractions = load_data_from_gcs("merged_tat_attractions.parquet")
+
+# โหลดไฟล์เมื่อทุกไฟล์มีอยู่
+# tripadvisor_reviews_sentiment = pd.read_parquet(os.path.join(DATASET_DIR, "sentiment_prediction.parquet"))
+# tripadvisor_attractions_details = pd.read_parquet(os.path.join(DATASET_DIR, "combined_details.parquet"))
+# attractions_tags_cluster = pd.read_parquet(os.path.join(DATASET_DIR, "cosine_clusters.parquet"))
+# tat_attractions = pd.read_parquet(os.path.join(DATASET_DIR, "merged_tat_attractions.parquet"))
 
 if "selected_places" not in st.session_state:
     st.session_state.selected_places = {}  
@@ -104,14 +134,6 @@ def filter_locations_within_distance(cluster_df, matching_place_cluster, distanc
     return filtered_df
 
 
-# Set page layout to "wide" (must be the first Streamlit command)
-st.set_page_config(
-    layout="wide",
-    page_title="Thailand Tourism Recommendation", 
-    page_icon="🚀",
-    initial_sidebar_state="collapsed"
-)
-
 # Icon URLs (or local paths)
 ICON_HOME = "https://img.icons8.com/fluency/48/home.png"  # Home icon
 ICON_DATA = "https://img.icons8.com/fluency/48/table.png"  # Data icon
@@ -152,17 +174,6 @@ if st.sidebar.button(f"🏠   Home", use_container_width=False, type="tertiary")
 if st.sidebar.button(f"📊   Data", use_container_width=False, type="tertiary"):
     menu_choice = "Data"
 
-# ✅ Load data from PostgreSQL
-DATASET_DIR = './data'
-tripadvisor_reviews_sentiment = pd.read_parquet(f'{DATASET_DIR}/sentiment_prediction.parquet')
-attractions_tags_cluster = pd.read_parquet(f'{DATASET_DIR}/cosine_clusters.parquet')
-tat_attractions = pd.read_parquet(f'{DATASET_DIR}/merged_tat_attractions.parquet')
-tripadvisor_attractions_details = pd.read_parquet(f'{DATASET_DIR}/combined_details.parquet')
-
-# merged_tat_attractions_df = pd.read_csv('./merged_tat_attractions.csv')
-# tripadvisor_attractions_details = pd.read_csv('./data/combined_details.csv')
-# tripadvisor_reviews_sentiment = pd.read_csv('./../../test/prediction/SVN_Prediction.csv', encoding='utf-8').reset_index(drop=True)
-# attractions_tags_cluster = pd.read_csv("./clustering_experiment/input/tag_embeddings.csv")
 
 if menu_choice == "Data":
     st.title("Data Table")
@@ -438,7 +449,7 @@ if st.session_state.attraction_options:
                             filtered_cluster_df = filter_locations_within_distance(cluster_df, matching_place_cluster, distance)
                             cluster_df = filtered_cluster_df
 
-                        ranking_recommendation = cluster_df[['name', 'cluster', 'total_review', 'rating_5_review_count', 'rating_4_review_count', 'sentiment_calc', 'trip_types_solo', 'trip_types_couples', 'trip_types_business', 'trip_types_family', 'trip_types_friends', 'latitude', 'longitude']].head(10)
+                        ranking_recommendation = cluster_df[['name', 'label', 'cluster', 'total_review', 'rating_5_review_count', 'rating_4_review_count', 'sentiment_calc', 'trip_types_solo', 'trip_types_couples', 'trip_types_business', 'trip_types_family', 'trip_types_friends', 'latitude', 'longitude']].head(10)
 
                         st.dataframe(ranking_recommendation.head(10), use_container_width=True) 
 
@@ -449,43 +460,45 @@ if st.session_state.attraction_options:
                                 "Longitude": ranking_recommendation["longitude"],
                                 "Value": np.full(len(ranking_recommendation), fill_value=30)
                             })
-                                                
-                            # Pydeck Layer
+
+                            icon_data = {
+                                "marker": {
+                                    "url": "https://upload.wikimedia.org/wikipedia/commons/e/ec/RedDot.svg",
+                                    "width": 128,
+                                    "height": 128,
+                                    "anchorY": 128
+                                }
+                            }
+
                             layer = pdk.Layer(
-                                "ScatterplotLayer",
+                                type="IconLayer",
                                 data=geoMapCoordinateData,
+                                get_icon="icon_data",
                                 get_position="[Longitude, Latitude]",
-                                get_radius="Value * 1000",  # Adjust size based on Value
-                                get_fill_color="[Value * 2, 100, 150, 128]",  # Set 128 for 50% transparency (RGBA)
+                                get_size=4,
+                                size_scale=15,
                                 pickable=True,
                             )
 
-                            # Pydeck View
                             view = pdk.ViewState(
                                 latitude=13.736717,
                                 longitude=100.523186,
                                 zoom=5,
-                                pitch=50,
+                                pitch=0,
                             )
 
-                            # Pydeck Deck
-                            r = pdk.Deck(
+                            deck = pdk.Deck(
                                 layers=[layer],
                                 initial_view_state=view,
-                                tooltip={"text": "{Province}\nValue: {Value}"},
+                                tooltip={"text": "{Province}"},
                                 map_provider="carto",
                                 map_style="road",
-                                parameters={
-                                    "interactionConfig": {
-                                        "scrollZoom": False,  # ✅ ปิดการซูมด้วย Scroll
-                                        "dragPan": False,    # ✅ ต้องกด `Ctrl` ก่อนถึงจะซูมได้
-                                    }
-                                }
+                                parameters={"iconAtlas": icon_data}
                             )
 
                             # Streamlit app
                             st.write("##### แผนที่แสดงสถานที่ท่องเที่ยวที่แนะนำ")
-                            st.pydeck_chart(r)
+                            st.pydeck_chart(deck)
                             
                             # ✅ ให้ User ให้คะแนนผลลัพธ์แต่ละอัน
                             st.write("🎯 ให้คะแนนผลลัพธ์ที่คุณชอบ (1-10): ")

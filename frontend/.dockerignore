@@ -13,11 +13,8 @@ venv/
 *.db
 *.sqlite3
 
-# Notebooks / data
+# Notebooks (แต่อนุญาต .parquet/.csv ที่ใช้ในแอป)
 *.ipynb
-*.csv
-*.tsv
-*.parquet
 
 # Git & IDE config
 .git/
@@ -25,11 +22,10 @@ venv/
 .vscode/
 .idea/
 
-# Pretrained & large models
+# Pretrained & large models (แต่ไม่บล็อก data ที่จำเป็น)
 pretained_or_finetune-models/
 models/
 datasets/
-data/
 hooks/
 test/
 tests/
@@ -39,9 +35,5 @@ logs/
 nltk_data/
 app/nltk_data/
 
-# Ignore Dockerfile in subpaths (if any)
-Dockerfile
-
-app/frontend/*.csv
-app/frontend/*.parquet
-app/frontend/data/*.csv
+frontend/data/
+frontend/inputs/
