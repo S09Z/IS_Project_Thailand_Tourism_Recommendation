@@ -176,9 +176,10 @@ test/models/output
 
 */node_modules
 *.csv
-*.parquet
+# *.parquet
 
 *.json
+!./dataset/tat_attractions.json
 
 *.model
 */nltk_data
