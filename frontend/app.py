@@ -15,6 +15,7 @@ import pandas as pd
 import pydeck as pdk
 from content_filtering import semantic_clustering
 
+
 # Set page layout to "wide" (must be the first Streamlit command)
 st.set_page_config(
     layout="wide",
@@ -40,8 +41,8 @@ def load_data_from_gcs(filename: str):
 # Example usage
 tripadvisor_reviews_sentiment = load_data_from_gcs("sentiment_prediction.parquet")
 tripadvisor_attractions_details = load_data_from_gcs("combined_details.parquet")
-attractions_tags_cluster = load_data_from_gcs("cosine_clusters.parquet")
-tat_attractions = load_data_from_gcs("merged_tat_attractions.parquet")
+attractions_tags_cluster = load_data_from_gcs("cosine_clusters_V3.parquet")
+tat_attractions = load_data_from_gcs("final_tat_attractions.parquet")
 
 # โหลดไฟล์เมื่อทุกไฟล์มีอยู่
 # tripadvisor_reviews_sentiment = pd.read_parquet(os.path.join(DATASET_DIR, "sentiment_prediction.parquet"))
@@ -317,14 +318,13 @@ elif menu_choice == "Home":
         st.write(f"**ระยะทาง:** {distance} กิโลเมตร")
         st.write(f"**ประเภทการเดินทาง:** {trip_types}")
         st.write(f"**คะแนนสถานที่:** {', '.join(map(str, ratings)) if ratings else 'ไม่ถูกเลือก'}")
-        
-        
+
         if filtered_search_text.strip():
-            result = semantic_clustering(search_text)
+            result = semantic_clustering(search_text, language=search_language)
             print(result)
             st.session_state.attraction_data = result  # ✅ เก็บข้อมูลเต็มไว้ใน session_state
             st.session_state.attraction_options = {
-                f"{item['attraction_name']} (Score: {math.floor(item['similarity_score'] * 100000) / 100000})": item["attraction_name"]
+                f"{item['attraction_name']} (Score: {(math.floor(item['similarity_score'] * 100000) / 100000):.3f})": item["attraction_name"]
                 for item in result
             }
             st.session_state.selected_places = {} 
@@ -361,7 +361,7 @@ if st.session_state.attraction_options:
         
         st.write("##### ข้อมูลสถานที่ท่องเที่ยวที่เลือก:")
         st.write(f"**TAT Place ID:** {result['place_id']}")
-        st.write(f"**Similarity Score:** {result['similarity_score']}")
+        st.write(f"**Similarity Score:** {result['similarity_score']:.3f}")
         st.write(f"**attraction_name:** {result['attraction_name']}")
         st.write(f"**Most Similar Name & Introduction:** {result['most_similar_name_and_introduction']}")
         
@@ -369,6 +369,7 @@ if st.session_state.attraction_options:
         cluster_df = None
         filtered_reviews = tripadvisor_reviews_sentiment[tripadvisor_reviews_sentiment["place_id"] == result["place_id"]]
         filtered_reviews = filtered_reviews[filtered_reviews["location_id"].isin(result['location_id'])]
+        print(">>>> Filtered reviews:", filtered_reviews)
         content_filtering_review = filtered_reviews.iloc[0] if not filtered_reviews.empty else None
 
         picked_tripadvisor_localtion_id = 0
@@ -376,16 +377,18 @@ if st.session_state.attraction_options:
             picked_tripadvisor_localtion_id = (result['location_id'][0])
 
         if content_filtering_review is not None:
-            location_ids = content_filtering_review["location_id"]
+            location_ids = result['location_id']
             # st.dataframe(location_ids, use_container_width=True)
             if isinstance(location_ids, (int, float, np.int64)):
-                location_ids = [location_ids]
+                location_ids = location_ids
                 
             attractions_tags_cluster["location_id"] = attractions_tags_cluster["location_id"].fillna(0).astype(int)
 
             matching_place_cluster = attractions_tags_cluster[
-                attractions_tags_cluster["location_id"] == int(picked_tripadvisor_localtion_id)
+                attractions_tags_cluster["location_id"] == (picked_tripadvisor_localtion_id)  
             ]
+            
+            # picked_tripadvisor_localtion_id = picked_tripadvisor_localtion_id[0]
             
             if matching_place_cluster is not None:
                 cluster_df = attractions_tags_cluster[attractions_tags_cluster["cluster"].isin(matching_place_cluster['cluster'])]
@@ -449,70 +452,87 @@ if st.session_state.attraction_options:
                             filtered_cluster_df = filter_locations_within_distance(cluster_df, matching_place_cluster, distance)
                             cluster_df = filtered_cluster_df
 
-                        ranking_recommendation = cluster_df[['name', 'label', 'cluster', 'total_review', 'rating_5_review_count', 'rating_4_review_count', 'sentiment_calc', 'trip_types_solo', 'trip_types_couples', 'trip_types_business', 'trip_types_family', 'trip_types_friends', 'latitude', 'longitude']].head(10)
+                        ranking_recommendation = cluster_df[
+                            [
+                                'name', 
+                                'label', 
+                                'cluster', 
+                                'sentiment_calc', 
+                                'total_review', 
+                                # 'rating_5_review_count', 
+                                # 'rating_4_review_count', 
+                                'trip_types_solo', 
+                                'trip_types_couples', 
+                                'trip_types_business', 
+                                'trip_types_family', 
+                                'trip_types_friends', 
+                                # 'latitude',
+                                # 'longitude'
+                            ]
+                        ].head(10)
 
                         st.dataframe(ranking_recommendation.head(10), use_container_width=True) 
 
-                        if len(cluster_df) > 0:
-                            geoMapCoordinateData = pd.DataFrame({
-                                "Province": ranking_recommendation["name"],
-                                "Latitude": ranking_recommendation["latitude"],
-                                "Longitude": ranking_recommendation["longitude"],
-                                "Value": np.full(len(ranking_recommendation), fill_value=30)
-                            })
+                        # if len(cluster_df) > 0:
+                        #     geoMapCoordinateData = pd.DataFrame({
+                        #         "Province": ranking_recommendation["name"],
+                        #         "Latitude": ranking_recommendation["latitude"],
+                        #         "Longitude": ranking_recommendation["longitude"],
+                        #         "Value": np.full(len(ranking_recommendation), fill_value=30)
+                        #     })
 
-                            icon_data = {
-                                "marker": {
-                                    "url": "https://upload.wikimedia.org/wikipedia/commons/e/ec/RedDot.svg",
-                                    "width": 128,
-                                    "height": 128,
-                                    "anchorY": 128
-                                }
-                            }
+                        #     icon_data = {
+                        #         "marker": {
+                        #             "url": "https://upload.wikimedia.org/wikipedia/commons/e/ec/RedDot.svg",
+                        #             "width": 128,
+                        #             "height": 128,
+                        #             "anchorY": 128
+                        #         }
+                        #     }
 
-                            layer = pdk.Layer(
-                                type="IconLayer",
-                                data=geoMapCoordinateData,
-                                get_icon="icon_data",
-                                get_position="[Longitude, Latitude]",
-                                get_size=4,
-                                size_scale=15,
-                                pickable=True,
-                            )
+                        #     layer = pdk.Layer(
+                        #         type="IconLayer",
+                        #         data=geoMapCoordinateData,
+                        #         get_icon="icon_data",
+                        #         get_position="[Longitude, Latitude]",
+                        #         get_size=4,
+                        #         size_scale=15,
+                        #         pickable=True,
+                        #     )
 
-                            view = pdk.ViewState(
-                                latitude=13.736717,
-                                longitude=100.523186,
-                                zoom=5,
-                                pitch=0,
-                            )
+                        #     view = pdk.ViewState(
+                        #         latitude=13.736717,
+                        #         longitude=100.523186,
+                        #         zoom=5,
+                        #         pitch=0,
+                        #     )
 
-                            deck = pdk.Deck(
-                                layers=[layer],
-                                initial_view_state=view,
-                                tooltip={"text": "{Province}"},
-                                map_provider="carto",
-                                map_style="road",
-                                parameters={"iconAtlas": icon_data}
-                            )
+                        #     deck = pdk.Deck(
+                        #         layers=[layer],
+                        #         initial_view_state=view,
+                        #         tooltip={"text": "{Province}"},
+                        #         map_provider="carto",
+                        #         map_style="road",
+                        #         parameters={"iconAtlas": icon_data}
+                        #     )
 
-                            # Streamlit app
-                            st.write("##### แผนที่แสดงสถานที่ท่องเที่ยวที่แนะนำ")
-                            st.pydeck_chart(deck)
+                        #     # Streamlit app
+                        #     st.write("##### แผนที่แสดงสถานที่ท่องเที่ยวที่แนะนำ")
+                        #     st.pydeck_chart(deck)
                             
-                            # ✅ ให้ User ให้คะแนนผลลัพธ์แต่ละอัน
-                            st.write("🎯 ให้คะแนนผลลัพธ์ที่คุณชอบ (1-10): ")
-                            index = 1
-                            for idx, row in ranking_recommendation.head(5).iterrows():
-                                # with st.form(key=f"form_{idx}"):  # ✅ ใช้ Form ป้องกัน Refresh หน้าเว็บ
-                                    # st.write(f"**🔹 [{index}] - {row['name']}**")
-                                    index += 1
+                        #     # ✅ ให้ User ให้คะแนนผลลัพธ์แต่ละอัน
+                        #     # st.write("🎯 ให้คะแนนผลลัพธ์ที่คุณชอบ (1-10): ")
+                        #     index = 1
+                        #     for idx, row in ranking_recommendation.head(5).iterrows():
+                        #         # with st.form(key=f"form_{idx}"):  # ✅ ใช้ Form ป้องกัน Refresh หน้าเว็บ
+                        #             # st.write(f"**🔹 [{index}] - {row['name']}**")
+                        #             index += 1
                                     
                             
     
-                            # # ✅ แสดง Feedback ที่ได้รับ
-                            # st.subheader("📊 ผลคะแนนที่ให้โดยผู้ใช้")
-                            # st.json(st.session_state.user_feedback)
+                        #     # # ✅ แสดง Feedback ที่ได้รับ
+                        #     # st.subheader("📊 ผลคะแนนที่ให้โดยผู้ใช้")
+                        #     # st.json(st.session_state.user_feedback)
 
                     else:
                         st.write("No matching Cluster found.")
@@ -520,3 +540,5 @@ if st.session_state.attraction_options:
                     st.write("No matching Cluster found.")
             else:
                 st.write("No matching TripAdvisor Place ID found.")
+    else:
+        st.write(f"*** Not TripAdvisor Place ID found ***")

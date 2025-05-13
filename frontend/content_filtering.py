@@ -2,6 +2,9 @@ import os
 import re
 import pandas as pd
 import numpy as np
+import emoji
+import string
+import nltk
 from attacut import tokenize
 from pythainlp import word_tokenize
 from pythainlp.corpus.common import thai_stopwords
@@ -10,6 +13,16 @@ from sklearn.preprocessing import normalize
 from sqlalchemy import create_engine, text
 from dotenv import load_dotenv
 from gensim.models import FastText
+from nltk.stem import WordNetLemmatizer
+from nltk.corpus import stopwords
+
+FINE_TUNED_DIR = 'pretained_or_finetune-models'
+NLTK_DATA_PATH = f"{FINE_TUNED_DIR}/nltk_data"
+
+nltk.data.path.append(NLTK_DATA_PATH)
+
+stop_words = set(stopwords.words('english')) 
+lemmatizer = WordNetLemmatizer()
 # import gcsfs
 
 # Load environment variables
@@ -39,10 +52,31 @@ def load_data_from_gcs(filename: str):
 # Example usage
 tripadvisor_reviews_sentiment = load_data_from_gcs("sentiment_prediction.parquet")
 tripadvisor_attractions_details = load_data_from_gcs("combined_details.parquet")
-attractions_tags_cluster = load_data_from_gcs("cosine_clusters.parquet")
-tat_attractions = load_data_from_gcs("merged_tat_attractions.parquet")
+attractions_tags_cluster = load_data_from_gcs("cosine_clusters_V3.parquet")
+tat_attractions = load_data_from_gcs("final_tat_attractions.parquet")
+maps_tat_and_tripadvisor_ids = load_data_from_gcs("TripAdvisor_Location_Ids.parquet")
+filtered_attractions_df = load_data_from_gcs("filtered_attractions_df.parquet")
+
 if tripadvisor_reviews_sentiment.empty or attractions_tags_cluster.empty or tat_attractions.empty:
     raise ValueError("❌ One or more required tables are empty. Please check your database.")
+
+def clean_english_text(text):
+    text = text.lower()
+    text = re.sub(r'\d+', '', text)  # Remove numbers
+    text = re.sub(r'[^a-z\s]', '', text)  # Remove special characters
+    text = re.sub(r'\b(u|ur|b4)\b', 'you', text)  # Replace common abbreviations
+    text = text.lower()
+    text = emoji.demojize(text)
+    text = ''.join([char for char in text if char not in string.punctuation])
+    tokens = nltk.word_tokenize(text)
+    
+    stop_words = set(stopwords.words('english'))
+    tokens = [word for word in tokens if word not in stop_words]
+    
+    lemmatizer = WordNetLemmatizer()
+    tokens = [lemmatizer.lemmatize(token) for token in tokens]
+    
+    return ' '.join(tokens)
 
 def clean_thai_text(text):
     """Preprocess Thai text by removing non-Thai characters and stopwords."""
@@ -54,99 +88,57 @@ def clean_thai_text(text):
     cleaned_tokens = [word for word in tokens if word not in stopwords_list]
     return " ".join(cleaned_tokens)
 
-def vectorize_fasttext(text, model):
-    tokens = tokenize(text)  # More accurate than word_tokenize
-    vectors = [model.wv[word] for word in tokens if word in model.wv]
-    
+def vectorize_fasttext(text, model, vector_size=None):
+    if not isinstance(text, str) or not text.strip():
+        return np.zeros(model.vector_size if vector_size is None else vector_size, dtype=np.float32)
+
+    try:
+        tokens = tokenize(text)  # สมมุติว่า tokenize ดีแล้ว
+    except Exception as e:
+        print(f"⚠️ Tokenization error: {e}")
+        return np.zeros(model.vector_size if vector_size is None else vector_size, dtype=np.float32)
+
+    vectors = [model.wv[word] for word in tokens if word in model.wv.key_to_index]
+
     if not vectors:
-        return np.random.uniform(-0.1, 0.1, model.vector_size)
-    
+        return np.zeros(model.vector_size if vector_size is None else vector_size, dtype=np.float32)
+
     return np.mean(vectors, axis=0)
 
-# ✅ Filter data
-# filtered_review_sentiment = tripadvisor_reviews_sentiment[
-#     tripadvisor_reviews_sentiment["location_id"].isin(attractions_tags_cluster["location_id"])
-# ]
-
-# print(tat_attractions)
+EN_fasttext_model = FastText.load(f"{BASE_DIR}/EN_fasttext_model.model")
+TH_fasttext_model = FastText.load(f"{BASE_DIR}/TH_fasttext_model.model")
 
 
-filtered_attractions_df = tat_attractions[
-    tat_attractions["place_id"].isin(tripadvisor_reviews_sentiment["place_id"])
-]
-
-# filtered_attractions_df.to_csv("./filtered_attractions_df.csv", index=False, encoding="utf-8")
-
-# ✅ Ensure necessary columns exist
-if "introduction_th" not in filtered_attractions_df.columns or "place_name_th" not in filtered_attractions_df.columns:
-    print("❌ Missing required columns in `tat_attractions`.")
-
-if filtered_attractions_df.empty:
-    print("❌ `filtered_attractions_df` is empty. Check your database filters.")
-
-# ✅ Preprocess and merge text
-filtered_attractions_df["cleaned_introduction_th"] = filtered_attractions_df["introduction_th"].apply(lambda x: clean_thai_text(x) if isinstance(x, str) else "")
-filtered_attractions_df["cleaned_place_name_th"] = filtered_attractions_df["place_name_th"].apply(lambda x: clean_thai_text(x) if isinstance(x, str) else "")
-
-filtered_attractions_df["merged_attraction_content"] = (
-    filtered_attractions_df["cleaned_introduction_th"].fillna("") + " " +
-    filtered_attractions_df["cleaned_place_name_th"].fillna("")
-).str.strip()
-
-
-# print("🔍 Sample merged_attraction_content data:\n", filtered_attractions_df["merged_attraction_content"].head())
-
-filtered_attractions_df = filtered_attractions_df[filtered_attractions_df["merged_attraction_content"].str.strip() != ""]
-
-if filtered_attractions_df.empty:
-    print("❌ No valid text found for training Word2Vec. Check text preprocessing.")
-
-tokenized_sentences = [word_tokenize(text) for text in filtered_attractions_df["merged_attraction_content"] if isinstance(text, str) and text.strip()]
-
-
-# print("🔍 Sample tokenized sentences:\n", tokenized_sentences[:5])
-
-attraction_vectors = []
-
-if not tokenized_sentences:
-    print("❌ No tokenized sentences available for Word2Vec training. Ensure preprocessing is correct.")
-else:
-    # w2v_model = Word2Vec(vector_size=100, min_count=1, workers=4)
-    # w2v_model.build_vocab(tokenized_sentences)  # ✅ Build vocabulary
-    # w2v_model.train(tokenized_sentences, total_examples=w2v_model.corpus_count, epochs=w2v_model.epochs)  # ✅ Train
-    fasttext_model = FastText(
-        vector_size=300,
-        window=10,   # Smaller window helps with short Thai words
-        min_count=2,  # Ignore rare words
-        workers=4,
-        sg=1,  # Use Skip-Gram (better for rare words)
-        min_n=2,  # Capture small subwords (better for Thai)
-        max_n=6,  # More flexible subword range
-        negative=10  # More negative samples = Better generalization
-    )
-    fasttext_model.build_vocab(tokenized_sentences)
-    fasttext_model.train(tokenized_sentences, total_examples=fasttext_model.corpus_count, epochs=20)
-
-    attraction_vectors = np.array([vectorize_fasttext(text, fasttext_model) for text in filtered_attractions_df["merged_attraction_content"]])
-
-attraction_vectors = np.array(attraction_vectors, dtype=np.float32)
-
-def semantic_clustering(input_text):
-    if len(attraction_vectors) == 0:
+def semantic_clustering(input_text, language="TH"):
+    cleaned_input_text = ""
+    TH_attraction_vectors = np.load(f"{BASE_DIR}/TH_attraction_vectors.npy")
+    EN_attraction_vectors = np.load(f"{BASE_DIR}/EN_attraction_vectors.npy")
+    
+    if (language == "TH" and TH_attraction_vectors.size == 0) or (language == "EN" and EN_attraction_vectors.size == 0):
         print("❌ No vectors available for similarity search!")
         return []
+    
+    if language == "TH":
+        attraction_vectors = TH_attraction_vectors
+        fasttext_model = TH_fasttext_model
+        cleaned_input_text = clean_thai_text(input_text)
+    elif language == "EN":
+        attraction_vectors = EN_attraction_vectors
+        fasttext_model = EN_fasttext_model
+        cleaned_input_text = clean_english_text(input_text)
+    else:
+        raise ValueError("❌ Unsupported language. Use 'TH' or 'EN'.")
 
     # ✅ Preprocess and vectorize the input text
-    cleaned_input_text = clean_thai_text(input_text)
     input_vector = vectorize_fasttext(cleaned_input_text, fasttext_model)
     input_vector = normalize(input_vector.reshape(1, -1))  # Normalize input vector
 
     # ✅ Compute Cosine Similarity
     similarity_scores = cosine_similarity(input_vector, attraction_vectors)[0]
     
-    for i, name in enumerate(filtered_attractions_df["place_name_th"]):
-        if cleaned_input_text in name:
-            similarity_scores[i] *= 1.2  # Boost water-related attractions
+    # for i, name in enumerate(filtered_attractions_df["place_name_th"]):
+    #     if cleaned_input_text in name:
+    #         similarity_scores[i] *= 1.2  # Boost water-related attractions
 
     # ✅ Get Top 5 Similar Attractions
     top_5_indices = np.argsort(similarity_scores)[::-1][:5]
@@ -161,17 +153,26 @@ def semantic_clustering(input_text):
 
         place_id = row["place_id"]
         place_name = row["place_name_th"]
-        merged_content = row["merged_attraction_content"]
+        merged_content = ""
         similarity_score = similarity_scores[idx]
+        
+        if language == "TH":
+            merged_content = row["merged_attraction_content_th"]
+        elif language == "EN":
+            merged_content = row["merged_attraction_content_en"]
+        else:
+            merged_content = "N/A"
 
         # ✅ Retrieve location_id from `tripadvisor_reviews_sentiment`
-        result_review = tripadvisor_reviews_sentiment[tripadvisor_reviews_sentiment["place_id"] == place_id]
+        result_review = maps_tat_and_tripadvisor_ids[maps_tat_and_tripadvisor_ids["place_id"] == place_id]
         location_id = result_review["location_id"].tolist() if not result_review.empty else []
+        
+        print(f"\n\n🔍 Place ID: {place_id} / Place Name {place_name} ({similarity_score:.3f}) >>>>>>>>> [location_id: {location_id}]")
 
         results.append({
             "place_id": place_id,
             "location_id": location_id,
-            "similarity_score": similarity_score,
+            "similarity_score": round(similarity_score, 3),
             "attraction_name": place_name,
             "most_similar_name_and_introduction": merged_content
         })
