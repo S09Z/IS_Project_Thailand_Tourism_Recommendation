@@ -4,10 +4,10 @@
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
-        <mxCell id="fiojD_ZwXKVUdr1jEcKW-1" value="&quot;The park was beautiful and clean, with friendly staff.&quot;" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+        <mxCell id="fiojD_ZwXKVUdr1jEcKW-1" value="&quot;The park was beautiful and clean, with friendly staff.&quot;" style="rounded=0;whiteSpace=wrap;html=1;" parent="1" vertex="1">
           <mxGeometry x="240" y="310" width="220" height="60" as="geometry" />
         </mxCell>
-        <mxCell id="fiojD_ZwXKVUdr1jEcKW-2" value="&quot;The park was beautiful and clean, with friendly staff.&quot;" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+        <mxCell id="fiojD_ZwXKVUdr1jEcKW-2" value="[&quot;the&quot;, &quot;park&quot; was beautiful and clean, with friendly staff&quot;]" style="rounded=0;whiteSpace=wrap;html=1;" parent="1" vertex="1">
           <mxGeometry x="240" y="430" width="220" height="60" as="geometry" />
         </mxCell>
       </root>
